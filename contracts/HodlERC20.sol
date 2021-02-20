@@ -53,8 +53,8 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   
   /**
    * @dev redeem token from the contract.
-   * before endTime: get out _share * discount / 100
-   * after endTime: get out tokenBalance / 
+   * before expiry: get out _share * discount / 100
+   * after expiry: get out tokenBalance / 
    */
   function exit(uint256 _share) external {
     uint256 amount;
