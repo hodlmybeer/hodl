@@ -9,6 +9,10 @@ import "hardhat-contract-sizer";
 // Go to https://hardhat.org/config/ to learn more
 
 export default {
+  networks: {
+    hardhat: {
+    }
+  },
   solidity: "0.7.3",
   settings: {
     optimizer: {
