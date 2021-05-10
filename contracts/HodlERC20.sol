@@ -125,7 +125,7 @@ contract HodlShare is ERC20PermitUpgradeable {
 
   /**
    * @dev get payout based on the current reward pool.
-   * this will burn your shares, and disable you from collecting rewards from later quiters from these shares.
+   * this will burn your shares, and disable you from collecting rewards from later quitters from these shares.
    * @param _share shares to burn
    */
   function redeem(uint256 _share) external {
@@ -141,7 +141,7 @@ contract HodlShare is ERC20PermitUpgradeable {
   }
 
   /**
-   * calcualte how much share you can get by depositing {_amount} token
+   * calculate how much share you can get by depositing {_amount} token
    */
   function calculateShares(uint256 _amount) external view returns (uint256) {
     return _calculateShares(_amount);
