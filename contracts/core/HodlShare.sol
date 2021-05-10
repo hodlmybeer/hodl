@@ -83,7 +83,7 @@ contract HodlShare is ERC20PermitUpgradeable {
     string memory _name, 
     string memory _symbol
   ) external initializer {
-    require(penalty < BASE, "INVALID_PENALTY");
+    require(_penalty < BASE, "INVALID_PENALTY");
     require(block.timestamp + _lockWindow < _expiry, "INVALID_EXPIRY");
 
     totalTime = _expiry - block.timestamp;

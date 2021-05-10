@@ -1,7 +1,8 @@
 import "@nomiclabs/hardhat-waffle";
 
 import "@typechain/hardhat";
-import "solidity-coverage"
+import "solidity-coverage";
+import "hardhat-contract-sizer";
 
 
 // You need to export an object to set up your config
@@ -19,4 +20,7 @@ export default {
     outDir: 'typechain',
     target: 'ethers-v5',
   },
+  contractSizer: {
+    alphaSort: true,
+  }
 };
