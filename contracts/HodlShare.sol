@@ -8,10 +8,10 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
  * HodlShare contract locks up your ERC20 token for a specified period of time.
- * Any deposit will mint you a share, which you can use once to get the "reward" from the common pool;
- * The later you deposit, the less share you get. this is to reward long time holders and avoid last-second joining sharing the prize
+ * Any deposit will mint you a share, which you can use once to get the reward from the shared pool;
+ * The later you deposit, the less share you get. this is to reward early depositors and avoid last-second joining sharing the reward
  * 
- * You can withdraw anytime before expiry but you will get penalized. the penalty amount will go to the prize pool.
+ * You can withdraw anytime before expiry but you will get penalized. the penalty amount will go to the reward pool.
  */
 contract HodlShare is ERC20PermitUpgradeable {
   using SafeERC20 for IERC20WithDecimals;
@@ -59,11 +59,11 @@ contract HodlShare is ERC20PermitUpgradeable {
    **********************/
   event Deposit(address depositor, uint256 amount);
 
-  event Exit(address quitter, uint256 amountOut, uint256 prize, uint256 fee);
+  event Exit(address quitter, uint256 amountOut, uint256 reward, uint256 fee);
 
   event Withdraw(address recipient, uint256 amountOut);
 
-  event Redeem(address recipient, uint256 shareBurned, uint256 amountPrize);
+  event Redeem(address recipient, uint256 shareBurned, uint256 reward);
 
   /**
    * @param _token address of the token of this hold contract
@@ -182,13 +182,13 @@ contract HodlShare is ERC20PermitUpgradeable {
     // this will revert if user is trying to call exit with amount more than his holdings.
     _holding[msg.sender] = _holding[msg.sender].sub(_amount);
 
-    (uint256 payout, uint256 prize, uint256 fee) = _calculatePayout(_amount);
+    (uint256 payout, uint256 reward, uint256 fee) = _calculatePayout(_amount);
     
     // increase total in reward pool and fee pool.
-    totalReward = totalReward.add(prize);
+    totalReward = totalReward.add(reward);
     totalFee = totalFee.add(fee);
 
-    emit Exit(msg.sender, payout, prize, fee);
+    emit Exit(msg.sender, payout, reward, fee);
 
     token.safeTransfer(msg.sender, payout);
   }
@@ -213,14 +213,14 @@ contract HodlShare is ERC20PermitUpgradeable {
    * @dev burn user share and send reward based on current reward pool.
    */
   function _redeem(uint256 _share) internal {
-    uint256 cachePrecisionFactor = PRECISION_FACTOR;
-    uint256 cacheTotalReward = totalReward;
-    uint256 payout = cacheTotalReward
-      .mul(cachePrecisionFactor).mul(_share)
-      .div(totalSupply()).div(cachePrecisionFactor);
+    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
+    uint256 cachedTotalReward = totalReward;
+    uint256 payout = cachedTotalReward
+      .mul(cachedPrecisionFactor).mul(_share)
+      .div(totalSupply()).div(cachedPrecisionFactor);
     
     // reduce total price recorded
-    totalReward = cacheTotalReward.sub(payout);
+    totalReward = cachedTotalReward.sub(payout);
 
     // transfer shares from user. this will revert if user don't have sufficient shares
     _burn(msg.sender, _share);
@@ -231,19 +231,19 @@ contract HodlShare is ERC20PermitUpgradeable {
   }
 
   /**
-   * @dev calcualte how much of _amount can be taken out by user, how much to prize pool and how much to feeRecipient
+   * @dev calcualte how much of _amount can be taken out by user, how much to reward pool and how much to feeRecipient
    * @param _amount total amount requested to withdraw before expiry.
    */
-  function _calculatePayout(uint256 _amount) internal view returns (uint256 payout, uint256 prize, uint256 fee) {
+  function _calculatePayout(uint256 _amount) internal view returns (uint256 payout, uint256 reward, uint256 fee) {
     uint256 cachedBase = BASE; // save SLOAD
     uint256 totalPenalty = _amount.mul(penalty).div(cachedBase);
     
     fee = totalPenalty.mul(feePortion).div(cachedBase);
-    prize = totalPenalty.sub(fee);
+    reward = totalPenalty.sub(fee);
     payout = _amount.sub(totalPenalty);
 
     // extra assertion to make sure user is not taking more than he's supposed to.
-    require(payout.add(fee).add(prize) == _amount, "INVALID_OPERATION");
+    require(payout.add(fee).add(reward) == _amount, "INVALID_OPERATION");
   }
 
   /**
