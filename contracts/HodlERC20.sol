@@ -54,7 +54,9 @@ contract HodlShare is ERC20PermitUpgradeable {
   mapping(address => uint256) internal _holding; 
 
 
-  /// Events
+  /**********************
+   *       Events       *
+   **********************/
   event Deposit(address depositor, uint256 amount);
 
   event Exit(address quitter, uint256 amountOut, uint256 prize, uint256 fee);
@@ -141,20 +143,33 @@ contract HodlShare is ERC20PermitUpgradeable {
   }
 
   /**
-   * calculate how much share you can get by depositing {_amount} token
+   * @dev calculate how much share you can get by depositing {_amount} token
+   * this will change based on {block.timestamp}
    */
   function calculateShares(uint256 _amount) external view returns (uint256) {
     return _calculateShares(_amount);
   }
 
-  //
-  // Internal Functions
-  // 
+  /**
+   * @dev withdraw all fees.
+   */
+  function withdrawFee() external {
+    require(msg.sender == feeRecipient, "NO_AUTHORIZED");
+
+    uint256 feeToPay = totalFee;
+    totalFee = 0;
+
+    token.safeTransfer(msg.sender, feeToPay);
+  }
+
+  /**********************
+   * Internal Functions *
+   **********************/
 
   /**
    * @dev exit the pool before expiry. 
    * this will send fund back the user, and increase totalFee and total Reward
-   * 
+   * @param _amount amount to withdraw before penalty
    */
   function _exit(uint256 _amount) internal {
     require(block.timestamp < expiry, "EXPIRED");
