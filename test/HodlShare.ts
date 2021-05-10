@@ -27,59 +27,96 @@ describe('HodlShare Tests', function () {
     await token.mint(accounts[1].address, amount);
     await token.mint(accounts[2].address, amount);
   });
+  describe('creation', () => {
+    describe('#init', () => {
+      let accounts = [];
+      const penalty = 50; // 5%
+      const lockingWindow = 86400 * 7;
+      const expiry = parseInt((Date.now() / 1000).toString()) + 86400 * 30;
+      const name = 'hodl share WETH';
+      const symbol = 'hWETH';
+      let feeRecipient: string;
 
-  describe('#init', () => {
-    let accounts = [];
-    const penalty = 50; // 5%
-    const lockingWindow = 86400 * 7;
-    const expiry = parseInt((Date.now() / 1000).toString()) + 86400 * 30;
-    const name = 'hodl share WETH';
-    const symbol = 'hWETH';
-    let feeRecipient: string;
+      this.beforeAll('Set accounts', async () => {
+        accounts = await ethers.getSigners();
+        feeRecipient = accounts[3].address;
+      });
 
-    this.beforeAll('Set accounts', async () => {
-      accounts = await ethers.getSigners();
-      feeRecipient = accounts[3].address;
+      it('Should revert when init with invalid penalty', async function () {
+        await expect(
+          hodl.init(token.address, 1001, lockingWindow, expiry, feeRecipient, name, symbol)
+        ).to.be.revertedWith('INVALID_PENALTY');
+      });
+
+      it('Should revert when init with invalid expiry', async function () {
+        const wrongExpiry = expiry - 86400 * 30;
+        await expect(
+          hodl.init(token.address, penalty, lockingWindow, wrongExpiry, feeRecipient, name, symbol)
+        ).to.be.revertedWith('INVALID_EXPIRY');
+      });
+
+      it('Should revert when init with locking window too long', async function () {
+        const wrongLockingWindow = 86400 * 31;
+        await expect(
+          hodl.init(token.address, penalty, wrongLockingWindow, expiry, feeRecipient, name, symbol)
+        ).to.be.revertedWith('INVALID_EXPIRY');
+      });
+
+      it('Should init the contract', async function () {
+        await hodl.init(token.address, penalty, lockingWindow, expiry, feeRecipient, name, symbol);
+
+        const fee = await hodl.totalFee();
+        const reward = await hodl.totalReward();
+        const totalSupply = await hodl.totalSupply();
+        const _expiry = await hodl.expiry();
+        const _decimals = await hodl.decimals();
+        const _name = await hodl.name();
+        const _symbol = await hodl.symbol();
+
+        expect(fee.isZero());
+        expect(reward.isZero());
+        expect(totalSupply.isZero());
+        expect(_expiry.eq(expiry));
+        expect(_decimals === 18, 'Wrong Decimal');
+        expect(_name === name, 'Wrong Name');
+        expect(_symbol === symbol, 'Wrong Symbol');
+      });
+
+      it('Should revert when trying to re-init', async function () {
+        await expect(
+          hodl.init(token.address, 0, 0, 0, feeRecipient, name, symbol)
+        ).to.be.revertedWith('Initializable: contract is already initialized');
+      });
     });
+  });
 
-    it('Should revert when init with invalid penalty', async function () {
-      await expect(
-        hodl.init(token.address, 1001, lockingWindow, expiry, feeRecipient, name, symbol)
-      ).to.be.revertedWith('INVALID_PENALTY');
+  describe('pre-expiry', () => {
+    describe('#deposit', () => {
+      it('Should be able to deposit', async function () {});
     });
-
-    it('Should revert when init with invalid expiry', async function () {
-      const wrongExpiry = expiry - 86400 * 30;
-      await expect(
-        hodl.init(token.address, penalty, lockingWindow, wrongExpiry, feeRecipient, name, symbol)
-      ).to.be.revertedWith('INVALID_EXPIRY');
+    describe('#exist', () => {
+      it('Should be able to exit', async function () {});
     });
-
-    it('Should revert when init with locking window too long', async function () {
-      const wrongLockingWindow = 86400 * 31;
-      await expect(
-        hodl.init(token.address, penalty, wrongLockingWindow, expiry, feeRecipient, name, symbol)
-      ).to.be.revertedWith('INVALID_EXPIRY');
+    describe('#withdraw', () => {
+      it('Should not be able to withdraw', async function () {});
     });
-
-    it('Should initialize the contract', async function () {
-      await hodl.init(token.address, penalty, lockingWindow, expiry, feeRecipient, name, symbol);
-
-      const fee = await hodl.totalFee();
-      const reward = await hodl.totalReward();
-      const totalSupply = await hodl.totalSupply();
-      const _expiry = await hodl.expiry();
-
-      expect(fee.isZero());
-      expect(reward.isZero());
-      expect(totalSupply.isZero());
-      expect(_expiry.eq(expiry));
+    describe('#redeem', () => {
+      it('Should be able to redeem', async function () {});
     });
+  });
 
-    it('Should revert when trying to re-init', async function () {
-      await expect(
-        hodl.init(token.address, 0, 0, 0, feeRecipient, name, symbol)
-      ).to.be.revertedWith('Initializable: contract is already initialized');
+  describe('post expiry', () => {
+    describe('#deposit', () => {
+      it('Should not be able to deposit', async function () {});
+    });
+    describe('#exist', () => {
+      it('Should not be able to exit', async function () {});
+    });
+    describe('#withdraw', () => {
+      it('Should be able to withdraw full amount', async function () {});
+    });
+    describe('#redeem', () => {
+      it('Should be able to redeem', async function () {});
     });
   });
 });
