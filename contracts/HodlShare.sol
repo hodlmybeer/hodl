@@ -91,6 +91,10 @@ contract HodlShare is ERC20PermitUpgradeable {
     _setupDecimals(decimals);
   }
 
+  function holding(address account) external view returns (uint256) {
+    return _holding[account];
+  }
+
   /**
    * @dev deposit token into the contract.
    * the deposit amount will be stored under the account.
@@ -111,10 +115,11 @@ contract HodlShare is ERC20PermitUpgradeable {
 
   /**
    * @dev exist from the pool pre expiry. Will revert if the pool is expired.
+   * @notice a quitter can keep getting rewards by holding his shares.
    * @param _amount amount of token to exist
    */
   function exit(uint256 _amount) external {
-
+    _exit(_amount);
   }
 
   /**
