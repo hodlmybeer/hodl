@@ -19,8 +19,11 @@ contract HodlShare is ERC20PermitUpgradeable {
 
   IERC20WithDecimals public token;
 
-  /// @notice penalty for withdraw 1000 token before expiry.
+  /// @notice penalty (3 decimals) for withdrawing before expiry. penalty 20 == 2%
   uint256 public penalty;
+
+  /// @notice fee (3 decimals) charged to feeRecipient before going to the pool. fee 20 == 2% of 
+  uint256 public fee;
 
   /// @notice the total duration from creation to expiry.
   uint256 public totalTime;
@@ -34,18 +37,28 @@ contract HodlShare is ERC20PermitUpgradeable {
   /// @notice current reward share by all the share holders
   uint256 public totalReward;
 
-  /// @dev scaling factor for penality
-  uint256 internal constant PENALTY_BASE = 1000;
+  /// @dev scaling factor for penalty and fee
+  uint256 internal constant BASE = 1000;
 
   /// @dev scaling factor for share calculation.
   uint256 internal constant PRECISION_FACTOR = 1e18;
 
-  /// @dev the address that's previllged to rehypothecate the money in the poool
-  address public governance;
+  /// @dev the address that collect fees from early quitter. ()
+  address public feeRecipient;
 
   /// @dev record each user's deposit amount. 
   /// We can't make this an ERC20 otherwise people will be able to trade it in a secondary market
-  mapping(address => uint256) internal _deposit; 
+  mapping(address => uint256) internal _holding; 
+
+
+  /// Events
+  event Deposit(address depositor, uint256 amount);
+
+  event Exit(address quitter, uint256 amountOut, uint256 prize, uint256 fee);
+
+  event Withdraw(address recipient, uint256 amountOut);
+
+  event Redeem(address recipient, uint256 shareBurned, uint256 amountPrize);
 
   /**
    * @param _token address of the token of this hold contract
@@ -55,13 +68,14 @@ contract HodlShare is ERC20PermitUpgradeable {
    * @param _name name of the token
    * @param _symbol symbol of the new token
    */
-  function init(address _token, uint256 _penalty, uint256 _lockWindow, uint256 _expiry, string memory _name, string memory _symbol) external {
-    require(penalty < PENALTY_BASE, "INVALID_PENALTY");
+  function init(address _token, uint256 _penalty, uint256 _lockWindow, uint256 _expiry, address _feeRecipient, string memory _name, string memory _symbol) external {
+    require(penalty < BASE, "INVALID_PENALTY");
     require(block.timestamp + _lockWindow < _expiry, "INVALID_EXPIRY");
 
     totalTime = _expiry - block.timestamp;
 
     token = IERC20WithDecimals(_token);
+    feeRecipient = _feeRecipient;
     penalty = _penalty;
     expiry = _expiry;
 
@@ -83,7 +97,7 @@ contract HodlShare is ERC20PermitUpgradeable {
     
     token.safeTransferFrom(msg.sender, address(this), _amount);
     
-    _deposit[msg.sender] = _deposit[msg.sender].add(_amount);
+    _holding[msg.sender] = _holding[msg.sender].add(_amount);
     
     // calculate shares and mint to msg.sender
     uint256 shares = _calculateShares(_amount);
@@ -91,11 +105,27 @@ contract HodlShare is ERC20PermitUpgradeable {
   }
 
   /**
+   * @dev withdraw post expiry. Will revert if the pool is not expired.
+   * @param _amount amount of token to withdraw
+   */
+  function withdraw(uint256 _amount) external {
+    _withdraw(_amount);
+  }
+
+  /**
    * @dev get payout based on the current reward pool.
-   * this will burn all your shares, and disable you from collecting rewards from later quiters.
+   * this will burn your shares, and disable you from collecting rewards from later quiters from these shares.
    * @param _share shares to burn
    */
   function redeem(uint256 _share) external {
+    _redeem(_share);
+  }
+
+  /**
+   * @dev withdraw initial deposit + reward after expiry
+   */
+  function withdrawCapitalAndReward(uint256 _amount, uint256 _share) external {
+    _withdraw(_amount);
     _redeem(_share);
   }
 
@@ -107,7 +137,23 @@ contract HodlShare is ERC20PermitUpgradeable {
   }
 
   /**
-   * @dev 
+   * @dev withdraw post expiry
+   */
+  function _withdraw(uint256 _amount) internal {
+    require(block.timestamp >= expiry, "NOT_EXPIRED");
+
+    uint256 cachedHolding = _holding[msg.sender];
+
+    // this will revert if someone is trying to withdraw more than he has.
+    _holding[msg.sender] = cachedHolding.sub(_amount);    
+
+    emit Withdraw(msg.sender, _amount);
+
+    token.safeTransfer(msg.sender, _amount);  
+  }
+
+  /**
+   * @dev burn user share and send reward based on current reward pool.
    */
   function _redeem(uint256 _share) internal {
     uint256 cachePrecisionFactor = PRECISION_FACTOR;
@@ -122,7 +168,8 @@ contract HodlShare is ERC20PermitUpgradeable {
     // transfer shares from user. this will revert if user don't have sufficient shares
     _burn(msg.sender, _share);
 
-    // payout
+    emit Redeem(msg.sender, _share, payout);
+
     token.safeTransfer(msg.sender, payout);
   }
 
