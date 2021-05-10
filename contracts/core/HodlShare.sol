@@ -2,7 +2,8 @@
 pragma solidity ^0.7.0;
 
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/drafts/ERC20PermitUpgradeable.sol";
-import {IERC20WithDecimals} from "./interfaces/IERC20WithDecimals.sol";
+import {IERC20WithDecimals} from "../interfaces/IERC20WithDecimals.sol";
+import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -73,7 +74,15 @@ contract HodlShare is ERC20PermitUpgradeable {
    * @param _name name of the token
    * @param _symbol symbol of the new token
    */
-  function init(address _token, uint256 _penalty, uint256 _lockWindow, uint256 _expiry, address _feeRecipient, string memory _name, string memory _symbol) external {
+  function init(
+    address _token, 
+    uint256 _penalty, 
+    uint256 _lockWindow, 
+    uint256 _expiry, 
+    address _feeRecipient, 
+    string memory _name, 
+    string memory _symbol
+  ) external initializer {
     require(penalty < BASE, "INVALID_PENALTY");
     require(block.timestamp + _lockWindow < _expiry, "INVALID_EXPIRY");
 
