@@ -19,11 +19,14 @@ contract HodlShare is ERC20PermitUpgradeable {
 
   IERC20WithDecimals public token;
 
-  /// @notice penalty (3 decimals) for withdrawing before expiry. penalty 20 == 2%
+  /// @notice penalty (3 decimals) for withdrawing before expiry. penalty of 20 == 2%
   uint256 public penalty;
 
-  /// @notice fee (3 decimals) charged to feeRecipient before going to the pool. fee 20 == 2% of 
-  uint256 public fee;
+  /// @notice feePortion (3 decimals) charged to feeRecipient before penalty going to the pool. fee of 100 == 10% of total penalty
+  uint256 public feePortion;
+
+  /// @notice total fee accumulated in this pool.
+  uint256 public totalFee;
 
   /// @notice the total duration from creation to expiry.
   uint256 public totalTime;
@@ -105,6 +108,14 @@ contract HodlShare is ERC20PermitUpgradeable {
   }
 
   /**
+   * @dev exist from the pool pre expiry. Will revert if the pool is expired.
+   * @param _amount amount of token to exist
+   */
+  function exit(uint256 _amount) external {
+
+  }
+
+  /**
    * @dev withdraw post expiry. Will revert if the pool is not expired.
    * @param _amount amount of token to withdraw
    */
@@ -134,6 +145,32 @@ contract HodlShare is ERC20PermitUpgradeable {
    */
   function calculateShares(uint256 _amount) external view returns (uint256) {
     return _calculateShares(_amount);
+  }
+
+  //
+  // Internal Functions
+  // 
+
+  /**
+   * @dev exit the pool before expiry. 
+   * this will send fund back the user, and increase totalFee and total Reward
+   * 
+   */
+  function _exit(uint256 _amount) internal {
+    require(block.timestamp < expiry, "EXPIRED");
+
+    // this will revert if user is trying to call exit with amount more than his holdings.
+    _holding[msg.sender] = _holding[msg.sender].sub(_amount);
+
+    (uint256 payout, uint256 prize, uint256 fee) = _calculatePayout(_amount);
+    
+    // increase total in reward pool and fee pool.
+    totalReward = totalReward.add(prize);
+    totalFee = totalFee.add(fee);
+
+    emit Exit(msg.sender, payout, prize, fee);
+
+    token.safeTransfer(msg.sender, payout);
   }
 
   /**
@@ -171,6 +208,22 @@ contract HodlShare is ERC20PermitUpgradeable {
     emit Redeem(msg.sender, _share, payout);
 
     token.safeTransfer(msg.sender, payout);
+  }
+
+  /**
+   * @dev calcualte how much of _amount can be taken out by user, how much to prize pool and how much to feeRecipient
+   * @param _amount total amount requested to withdraw before expiry.
+   */
+  function _calculatePayout(uint256 _amount) internal view returns (uint256 payout, uint256 prize, uint256 fee) {
+    uint256 cachedBase = BASE; // save SLOAD
+    uint256 totalPenalty = _amount.mul(penalty).div(cachedBase);
+    
+    fee = totalPenalty.mul(feePortion).div(cachedBase);
+    prize = totalPenalty.sub(fee);
+    payout = _amount.sub(totalPenalty);
+
+    // extra assertion to make sure user is not taking more than he's supposed to.
+    require(payout.add(fee).add(prize) == _amount, "INVALID_OPERATION");
   }
 
   /**
