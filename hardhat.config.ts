@@ -1,6 +1,7 @@
 import "@nomiclabs/hardhat-waffle";
 
 import "@typechain/hardhat";
+import "solidity-coverage"
 
 
 // You need to export an object to set up your config

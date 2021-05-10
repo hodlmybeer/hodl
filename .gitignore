@@ -5,3 +5,5 @@ cache
 artifacts
 typechain
 .vscode
+coverage
+coverage.json
