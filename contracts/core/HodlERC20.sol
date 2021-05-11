@@ -9,12 +9,13 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
 /**
  * HodlShare contract locks up your ERC20 token for a specified period of time.
- * Any deposit will mint you a share, which you can use once to get the reward from the shared pool;
+ * Any deposit will mint you a non-transferable hodlToken
+ * which you can use to redeem your deposit. If ou redeem before expiry, you lose some amount to penalty.
  * The later you deposit, the less share you get. this is to reward early depositors and avoid last-second joining sharing the reward
  * 
  * You can withdraw anytime before expiry but you will get penalized. the penalty amount will go to the reward pool.
  */
-contract HodlShare is ERC20PermitUpgradeable {
+contract HodlERC20 is ERC20PermitUpgradeable {
   using SafeERC20 for IERC20WithDetail;
   using SafeMath for uint256;
 
@@ -50,9 +51,8 @@ contract HodlShare is ERC20PermitUpgradeable {
   /// @dev the address that collect fees from early quitter. ()
   address public feeRecipient;
 
-  /// @dev record each user's deposit amount. 
-  /// We can't make this an ERC20 otherwise people will be able to trade it in a secondary market
-  mapping(address => uint256) internal _holding; 
+  /// @dev record each user's share to the pool. 
+  mapping(address => uint256) internal _shares; 
 
 
   /**********************
@@ -102,8 +102,11 @@ contract HodlShare is ERC20PermitUpgradeable {
     _setupDecimals(decimals);
   }
 
-  function holding(address account) external view returns (uint256) {
-    return _holding[account];
+  /**
+   * get current share to the pool
+   */
+  function getShares(address _account) external view returns (uint256) {
+    return _shares[_account];
   }
 
   /**
@@ -117,11 +120,12 @@ contract HodlShare is ERC20PermitUpgradeable {
     
     token.safeTransferFrom(msg.sender, address(this), _amount);
     
-    _holding[msg.sender] = _holding[msg.sender].add(_amount);
+    // mint hold token to the user
+    _mint(msg.sender, _amount);
     
     // calculate shares and mint to msg.sender
     uint256 shares = _calculateShares(_amount);
-    _mint(msg.sender, shares);
+    _shares[msg.sender] = _shares[msg.sender].add(shares);
   }
 
   /**
@@ -191,7 +195,7 @@ contract HodlShare is ERC20PermitUpgradeable {
     require(block.timestamp < expiry, "EXPIRED");
 
     // this will revert if user is trying to call exit with amount more than his holdings.
-    _holding[msg.sender] = _holding[msg.sender].sub(_amount);
+    _burn(msg.sender, _amount);
 
     (uint256 payout, uint256 reward, uint256 fee) = _calculatePayout(_amount);
     
@@ -209,11 +213,8 @@ contract HodlShare is ERC20PermitUpgradeable {
    */
   function _withdraw(uint256 _amount) internal {
     require(block.timestamp >= expiry, "NOT_EXPIRED");
-
-    uint256 cachedHolding = _holding[msg.sender];
-
-    // this will revert if someone is trying to withdraw more than he has.
-    _holding[msg.sender] = cachedHolding.sub(_amount);    
+    
+    _burn(msg.sender, _amount);
 
     emit Withdraw(msg.sender, _amount);
 
@@ -221,7 +222,7 @@ contract HodlShare is ERC20PermitUpgradeable {
   }
 
   /**
-   * @dev burn user share and send reward based on current reward pool.
+   * @dev reduce user share and send reward based on current reward pool.
    */
   function _redeem(uint256 _share) internal {
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
@@ -234,7 +235,7 @@ contract HodlShare is ERC20PermitUpgradeable {
     totalReward = cachedTotalReward.sub(payout);
 
     // transfer shares from user. this will revert if user don't have sufficient shares
-    _burn(msg.sender, _share);
+    _shares[msg.sender] = _shares[msg.sender].sub(_share);
 
     emit Redeem(msg.sender, _share, payout);
 
@@ -268,5 +269,12 @@ contract HodlShare is ERC20PermitUpgradeable {
     uint256 timeLeft = expiry - block.timestamp;
     uint256 cachePrecisionFactor = PRECISION_FACTOR;
     return _amount.mul(timeLeft).mul(timeLeft).mul(cachePrecisionFactor).div(totalTime).div(totalTime).div(cachePrecisionFactor);
+  }
+
+  /**
+   * hook to prevent transfering the hodlToken
+   */
+  function _beforeTokenTransfer(address from, address to, uint256) internal override {
+    require(from == address(0) || to == address(0), "!Transfer");
   }
 }
