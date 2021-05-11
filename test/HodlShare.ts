@@ -56,32 +56,33 @@ describe('HodlShare Tests', function () {
       const lockingWindow = 86400 * 7;
       const name = 'hodl share WETH';
       const symbol = 'hWETH';
+      const fee = 50; //5% of penalty
       
 
       it('Should revert when init with invalid penalty', async function () {
         await expect(
-          hodl.init(token.address, 1001, lockingWindow, expiry, feeRecipient.address, name, symbol)
+          hodl.init(token.address, 1001, lockingWindow, expiry, fee, feeRecipient.address, name, symbol)
         ).to.be.revertedWith('INVALID_PENALTY');
       });
 
       it('Should revert when init with invalid expiry', async function () {
         const wrongExpiry = expiry.sub(86400 * 30);
         await expect(
-          hodl.init(token.address, penalty, lockingWindow, wrongExpiry, feeRecipient.address, name, symbol)
+          hodl.init(token.address, penalty, lockingWindow, wrongExpiry, fee, feeRecipient.address, name, symbol)
         ).to.be.revertedWith('INVALID_EXPIRY');
       });
 
       it('Should revert when init with locking window too long', async function () {
         const wrongLockingWindow = 86400 * 31;
         await expect(
-          hodl.init(token.address, penalty, wrongLockingWindow, expiry, feeRecipient.address, name, symbol)
+          hodl.init(token.address, penalty, wrongLockingWindow, expiry, fee, feeRecipient.address, name, symbol)
         ).to.be.revertedWith('INVALID_EXPIRY');
       });
 
       it('Should init the contract', async function () {
-        await hodl.init(token.address, penalty, lockingWindow, expiry, feeRecipient.address, name, symbol);
+        await hodl.init(token.address, penalty, lockingWindow, expiry, fee, feeRecipient.address, name, symbol);
 
-        const fee = await hodl.totalFee();
+        const _totalFee = await hodl.totalFee();
         const reward = await hodl.totalReward();
         const totalSupply = await hodl.totalSupply();
         const _expiry = await hodl.expiry();
@@ -91,7 +92,7 @@ describe('HodlShare Tests', function () {
         
         totalTime = await hodl.totalTime()
 
-        expect(fee.isZero());
+        expect(_totalFee.isZero());
         expect(reward.isZero());
         expect(totalSupply.isZero());
         expect(_expiry.eq(expiry));
@@ -102,7 +103,7 @@ describe('HodlShare Tests', function () {
 
       it('Should revert when trying to re-init', async function () {
         await expect(
-          hodl.init(token.address, 0, 0, 0, feeRecipient.address, name, symbol)
+          hodl.init(token.address, 0, 0, 0, 0, feeRecipient.address, name, symbol)
         ).to.be.revertedWith('Initializable: contract is already initialized');
       });
     });
@@ -116,18 +117,28 @@ describe('HodlShare Tests', function () {
         const depositAmount = utils.parseUnits('1')
         
         // let time = Math.round(new Date().getTime() / 1000) + 86400
-        const txRes = await hodl.deposit(depositAmount, { from: depositor1.address })
+        const txRes = await hodl.deposit(depositAmount)
         const block =  await provider.getBlock(txRes.blockNumber)
         const blockTime = block.timestamp
         
-        const _sharesToGet = calculateShares(depositAmount, totalTime, blockTime, expiry)
-        const shares = await hodl.balanceOf(depositor1.address)
-        expect(_sharesToGet.eq(shares));
+        const d1ShareToGet = calculateShares(depositAmount, totalTime, blockTime, expiry)
+        const d1Shares = await hodl.balanceOf(depositor1.address)
+        expect(d1ShareToGet.eq(d1Shares));
 
+        // // mint for depositor 2
+        // await token.approve(hodl.address, ethers.constants.MaxUint256,)
+        // const txRes2 = await hodl.deposit(depositAmount)
+        // const block2 =  await provider.getBlock(txRes2.blockNumber)
+        // const d2ShareToGet = calculateShares(depositAmount, totalTime, block2.timestamp, expiry)
+        // const d2Shares = await hodl.balanceOf(depositor2.address)
+        // expect(d2ShareToGet.eq(d2Shares));
+        // expect(d2ShareToGet.lt(d1ShareToGet), "later depositor should get fewer shares")
       });
     });
     describe('#exist', () => {
-      it('Should be able to exit', async function () {});
+      it('Should be able to exit', async function () {
+
+      });
     });
     describe('#withdraw', () => {
       it('Should not be able to withdraw', async function () {});

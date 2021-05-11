@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/drafts/ERC20PermitUpgradeable.sol";
-import {IERC20WithDecimals} from "../interfaces/IERC20WithDecimals.sol";
+import {IERC20WithDetail} from "../interfaces/IERC20WithDetail.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
@@ -15,10 +15,10 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
  * You can withdraw anytime before expiry but you will get penalized. the penalty amount will go to the reward pool.
  */
 contract HodlShare is ERC20PermitUpgradeable {
-  using SafeERC20 for IERC20WithDecimals;
+  using SafeERC20 for IERC20WithDetail;
   using SafeMath for uint256;
 
-  IERC20WithDecimals public token;
+  IERC20WithDetail public token;
 
   /// @notice penalty (3 decimals) for withdrawing before expiry. penalty of 20 == 2%
   uint256 public penalty;
@@ -79,6 +79,7 @@ contract HodlShare is ERC20PermitUpgradeable {
     uint256 _penalty, 
     uint256 _lockWindow, 
     uint256 _expiry, 
+    uint256 _fee,
     address _feeRecipient, 
     string memory _name, 
     string memory _symbol
@@ -88,8 +89,9 @@ contract HodlShare is ERC20PermitUpgradeable {
 
     totalTime = _expiry - block.timestamp;
 
-    token = IERC20WithDecimals(_token);
+    token = IERC20WithDetail(_token);
     feeRecipient = _feeRecipient;
+    feePortion = _fee;
     penalty = _penalty;
     expiry = _expiry;
 
