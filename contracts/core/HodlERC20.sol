@@ -130,11 +130,11 @@ contract HodlERC20 is ERC20PermitUpgradeable {
 
   /**
    * @dev exist from the pool pre expiry. Will revert if the pool is expired.
-   * @notice a quitter can keep getting rewards by holding his shares.
+   * @notice user are forced to redeem all the shares before they quit
    * @param _amount amount of token to exist
    */
-  function exit(uint256 _amount) external {
-    _exit(_amount);
+  function quit(uint256 _amount) external {
+    _quit(_amount);
   }
 
   /**
@@ -187,11 +187,11 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    **********************/
 
   /**
-   * @dev exit the pool before expiry. 
+   * @dev quit the pool before expiry. 
    * this will send fund back the user, and increase totalFee and total Reward
    * @param _amount amount to withdraw before penalty
    */
-  function _exit(uint256 _amount) internal {
+  function _quit(uint256 _amount) internal {
     require(block.timestamp < expiry, "EXPIRED");
 
     // this will revert if user is trying to call exit with amount more than his holdings.

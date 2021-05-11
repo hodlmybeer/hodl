@@ -130,7 +130,7 @@ describe('HodlERC20 Tests', function () {
       });
     });
     describe('#exist', () => {
-      it('Should be able to exit', async function () {
+      it('Should be able to quit', async function () {
 
       });
     });
@@ -147,7 +147,7 @@ describe('HodlERC20 Tests', function () {
       it('Should not be able to deposit', async function () {});
     });
     describe('#exist', () => {
-      it('Should not be able to exit', async function () {});
+      it('Should not be able to quit', async function () {});
     });
     describe('#withdraw', () => {
       it('Should be able to withdraw full amount', async function () {});
