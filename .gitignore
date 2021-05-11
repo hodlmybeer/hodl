@@ -4,6 +4,6 @@ node_modules
 cache
 artifacts
 typechain
-.vscode
+.vscode/
 coverage
 coverage.json
