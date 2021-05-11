@@ -51,10 +51,9 @@ describe('HodlERC20 Tests', function () {
   
   describe('creation', () => {
     describe('#init', () => {
-      let accounts = [];
       const penalty = 50; // 5%
       const lockingWindow = 86400 * 7;
-      const name = 'hodl share WETH';
+      const name = 'hodl WETH';
       const symbol = 'hWETH';
       const fee = 50; //5% of penalty
       
