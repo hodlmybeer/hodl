@@ -130,10 +130,18 @@ contract HodlERC20 is ERC20PermitUpgradeable {
 
   /**
    * @dev exist from the pool pre expiry. Will revert if the pool is expired.
-   * @notice user are forced to redeem all the shares before they quit
+   * @dev calling this function will automatically redeem some of user's share, 
+   * porpotional to the amount they're withdrawling early. 
+   * This is to prevent a user leaving a pool to keep earning rewards
    * @param _amount amount of token to exist
    */
   function quit(uint256 _amount) external {
+    // force redeem
+    if (_shares[msg.sender] > 0) {
+      uint256 sharesToRedeem = _calculateSharesForceRedeem(msg.sender, _amount);
+      _redeem(sharesToRedeem);
+    }
+    
     _quit(_amount);
   }
 
@@ -243,6 +251,21 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   }
 
   /**
+   * calculate amount of shares the user is forced to redeem when quiting early
+   */
+  function _calculateSharesForceRedeem(address _account, uint256 _amount) internal view returns (uint256) {
+    uint256 totalCapital = balanceOf(_account);
+    uint256 totalShares = _shares[_account];
+    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
+    
+    return _amount
+      .mul(totalShares)
+      .mul(cachedPrecisionFactor)
+      .div(totalCapital)
+      .div(cachedPrecisionFactor);
+  }
+
+  /**
    * @dev calcualte how much of _amount can be taken out by user, how much to reward pool and how much to feeRecipient
    * @param _amount total amount requested to withdraw before expiry.
    */
@@ -267,8 +290,13 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    */
   function _calculateShares(uint256 _amount) internal view returns (uint256) {
     uint256 timeLeft = expiry - block.timestamp;
-    uint256 cachePrecisionFactor = PRECISION_FACTOR;
-    return _amount.mul(timeLeft).mul(timeLeft).mul(cachePrecisionFactor).div(totalTime).div(totalTime).div(cachePrecisionFactor);
+    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
+    return _amount.mul(timeLeft)
+      .mul(timeLeft)
+      .mul(cachedPrecisionFactor)
+      .div(totalTime)
+      .div(totalTime)
+      .div(cachedPrecisionFactor);
   }
 
   /**
