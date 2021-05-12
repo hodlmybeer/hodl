@@ -56,30 +56,31 @@ describe('HodlERC20 Tests', function () {
       const name = 'hodl WETH';
       const symbol = 'hWETH';
       const fee = 50; //5% of penalty
+      const n = 2 // exponential decay
       
 
       it('Should revert when init with invalid penalty', async function () {
         await expect(
-          hodl.init(token.address, 1001, lockingWindow, expiry, fee, feeRecipient.address, name, symbol)
+          hodl.init(token.address, 1001, lockingWindow, expiry, fee, n,feeRecipient.address, name, symbol)
         ).to.be.revertedWith('INVALID_PENALTY');
       });
 
       it('Should revert when init with invalid expiry', async function () {
         const wrongExpiry = expiry.sub(86400 * 30);
         await expect(
-          hodl.init(token.address, penalty, lockingWindow, wrongExpiry, fee, feeRecipient.address, name, symbol)
+          hodl.init(token.address, penalty, lockingWindow, wrongExpiry, fee, n,feeRecipient.address, name, symbol)
         ).to.be.revertedWith('INVALID_EXPIRY');
       });
 
       it('Should revert when init with locking window too long', async function () {
         const wrongLockingWindow = 86400 * 31;
         await expect(
-          hodl.init(token.address, penalty, wrongLockingWindow, expiry, fee, feeRecipient.address, name, symbol)
+          hodl.init(token.address, penalty, wrongLockingWindow, expiry, fee, n,feeRecipient.address, name, symbol)
         ).to.be.revertedWith('INVALID_EXPIRY');
       });
 
       it('Should init the contract', async function () {
-        await hodl.init(token.address, penalty, lockingWindow, expiry, fee, feeRecipient.address, name, symbol);
+        await hodl.init(token.address, penalty, lockingWindow, expiry, fee, n,feeRecipient.address, name, symbol);
 
         const _totalFee = await hodl.totalFee();
         const reward = await hodl.totalReward();
@@ -91,18 +92,18 @@ describe('HodlERC20 Tests', function () {
         
         totalTime = await hodl.totalTime()
 
-        expect(_totalFee.isZero());
-        expect(reward.isZero());
-        expect(totalSupply.isZero());
-        expect(_expiry.eq(expiry));
-        expect(_decimals === 18, 'Wrong Decimal');
-        expect(_name === name, 'Wrong Name');
-        expect(_symbol === symbol, 'Wrong Symbol');
+        expect(_totalFee.isZero()).to.be.true;
+        expect(reward.isZero()).to.be.true;
+        expect(totalSupply.isZero()).to.be.true;
+        expect(_expiry.eq(expiry)).to.be.true;
+        expect(_decimals).to.equal(18);
+        expect(_name).to.eq(name);
+        expect(_symbol).to.eq(symbol)
       });
 
       it('Should revert when trying to re-init', async function () {
         await expect(
-          hodl.init(token.address, 0, 0, 0, 0, feeRecipient.address, name, symbol)
+          hodl.init(token.address, 0, 0, 0, 0, 0, feeRecipient.address, name, symbol)
         ).to.be.revertedWith('Initializable: contract is already initialized');
       });
     });
@@ -115,18 +116,17 @@ describe('HodlERC20 Tests', function () {
         // deposit 1 WETH
         const depositAmount = utils.parseUnits('1')
         
-        // let time = Math.round(new Date().getTime() / 1000) + 86400
         const txRes = await hodl.deposit(depositAmount)
         const block =  await provider.getBlock(txRes.blockNumber)
         const blockTime = block.timestamp
         
         const hTokenBalance = await hodl.balanceOf(depositor1.address)
-        expect(hTokenBalance.eq(depositAmount), "token amount mismatch");
+        expect(hTokenBalance).to.eq(depositAmount)
 
         const d1Shares = await hodl.getShares(depositor1.address)
-        const d1ShareToGet = calculateShares(depositAmount, totalTime, blockTime, expiry)
-        
-        expect(d1ShareToGet.eq(d1Shares));
+        const d1ShareToGet = calculateShares(depositAmount, totalTime, blockTime, expiry, 2)
+        expect(d1Shares).to.eq(d1ShareToGet)
+        expect(d1Shares.lt(depositAmount)).to.be.true
       });
     });
     describe('#exist', () => {

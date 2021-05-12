@@ -42,6 +42,10 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /// @notice current reward share by all the share holders
   uint256 public totalReward;
 
+  /// @notice how fast shares you get decrease over time. 
+  ///         when n = 0 there's no decay. n = 1: linear decay, n = 2 exponential decay
+  uint256 public n;
+
   /// @dev scaling factor for penalty and fee
   uint256 internal constant BASE = 1000;
 
@@ -80,6 +84,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     uint256 _lockWindow, 
     uint256 _expiry, 
     uint256 _fee,
+    uint256 _n,
     address _feeRecipient, 
     string memory _name, 
     string memory _symbol
@@ -94,6 +99,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     feePortion = _fee;
     penalty = _penalty;
     expiry = _expiry;
+    n = _n;
 
     __ERC20_init(_name, _symbol);
 
@@ -282,20 +288,20 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   }
 
   /**
-   * @dev the share you get depositing _amount into the pool
+   * @dev the share you get depositing _amount into the pool. Dependent on n.
+   *      eg. when n = 1, the shares decrease linear as time goes by;
+   *          when n = 2, the shares decrease exponentially.
    * 
-   *                        (timeLeft)^2
+   *                        (timeLeft)^ n
    * share = amount * --------------------------
-   *                      (total duration)^2
+   *                      (total duration)^ n
    */
   function _calculateShares(uint256 _amount) internal view returns (uint256) {
     uint256 timeLeft = expiry - block.timestamp;
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-    return _amount.mul(timeLeft)
-      .mul(timeLeft)
+    return _amount.mul(timeLeft**n)
       .mul(cachedPrecisionFactor)
-      .div(totalTime)
-      .div(totalTime)
+      .div(totalTime**n)
       .div(cachedPrecisionFactor);
   }
 
