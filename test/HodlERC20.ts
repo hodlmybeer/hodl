@@ -7,7 +7,8 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 describe('HodlERC20 Tests', function () {
   const provider = waffle.provider;
-  const expiry = BigNumber.from(parseInt((Date.now() / 1000).toString()) + 86400 * 3); // 3 days period
+  const totalDuration = 86400 * 3; // 3 days period
+  const expiry = BigNumber.from(parseInt((Date.now() / 1000).toString()) + totalDuration);
   let hodl: HodlERC20;
   let token: MockERC20;
   let totalTime: BigNumber;
@@ -154,13 +155,10 @@ describe('HodlERC20 Tests', function () {
     describe('#transfer', () => {
       it('Should revert when transfer is called', async function () {
         await expect(
-          hodl.connect(depositor1).transfer(
-            depositor2.address,
-            10000
-          )
+          hodl.connect(depositor1).transfer(depositor2.address, 10000)
         ).to.be.revertedWith('!TRANSFER');
-      })
-    })
+      });
+    });
     describe('#deposit', () => {
       it('Should deposit and get correct shares from depositor1 & depositor2', async function () {
         // deposit 1 WETH from depositor1
@@ -211,60 +209,93 @@ describe('HodlERC20 Tests', function () {
 
         // check depositor 1 got corrent amount back
         const d1Penalty = depositAmount.mul(penalty).div(1000);
-        
+
         const tokenBalanceAfter = await token.balanceOf(depositor1.address);
-        expect(tokenBalanceAfter.sub(tokenBalanceBefore).eq(depositAmount.sub(d1Penalty)), "penalty amount").to.be.true
+        expect(
+          tokenBalanceAfter.sub(tokenBalanceBefore).eq(depositAmount.sub(d1Penalty)),
+          'penalty amount'
+        ).to.be.true;
 
         // check total fee
-        const feeCollected = d1Penalty.mul(fee).div(1000)
-        const totalFee = await hodl.totalFee()
-        expect(totalFee.eq(feeCollected)).to.be.true
+        const feeCollected = d1Penalty.mul(fee).div(1000);
+        const totalFee = await hodl.totalFee();
+        expect(totalFee.eq(feeCollected)).to.be.true;
 
         // check total fee
-        const _totalRewards = d1Penalty.sub(feeCollected)
-        const totalReward = await hodl.totalReward()
-        expect(totalReward.eq(_totalRewards)).to.be.true
+        const _totalRewards = d1Penalty.sub(feeCollected);
+        const totalReward = await hodl.totalReward();
+        expect(totalReward.eq(_totalRewards)).to.be.true;
       });
     });
     describe('#withdraw', () => {
       it('Should not be able to withdraw', async function () {
-        await expect(
-          hodl.connect(depositor2).withdraw(10000)
-        ).to.be.revertedWith('!EXPIRED');
+        await expect(hodl.connect(depositor2).withdraw(10000)).to.be.revertedWith('!EXPIRED');
       });
     });
     describe('#redeem', () => {
       it('Should be able to redeem', async function () {
         const balanceBefore = await token.balanceOf(depositor2.address);
-        const d2Shares = await hodl.shares(depositor2.address)
-        const totalRewards = await hodl.totalReward()
-        const redeemShares = d2Shares.div(2)
+        const d2Shares = await hodl.shares(depositor2.address);
+        const totalRewards = await hodl.totalReward();
+        const redeemShares = d2Shares.div(2);
 
-        const totalShares = await hodl.totalShares()
-        
+        const totalShares = await hodl.totalShares();
+
         const amountToGet = totalRewards.mul(redeemShares).div(totalShares);
-        await hodl.connect(depositor2).redeem(redeemShares)
+        await hodl.connect(depositor2).redeem(redeemShares);
         const balanceAfter = await token.balanceOf(depositor2.address);
-        expect(balanceAfter.sub(balanceBefore).eq(amountToGet)).to.be.true
+        expect(balanceAfter.sub(balanceBefore).eq(amountToGet)).to.be.true;
 
-        const totalSharesAfter = await hodl.totalShares()
-        expect(totalShares.sub(totalSharesAfter).eq(redeemShares)).to.be.true
+        const totalSharesAfter = await hodl.totalShares();
+        expect(totalShares.sub(totalSharesAfter).eq(redeemShares)).to.be.true;
+      });
+    });
+    describe('#withdrawAllPostExpiry', () => {
+      it('Should not be able to call withdrawAllPostExpiry', async function () {
+        await expect(hodl.connect(depositor2).withdrawAllPostExpiry()).to.be.revertedWith(
+          '!EXPIRED'
+        );
       });
     });
   });
 
-  describe('post expiry', () => {
-    describe('#deposit', () => {
-      it('Should not be able to deposit', async function () {});
+  describe('lock period', () => {
+    before('increase blocktime', async () => {
+      const time = expiry.toNumber() - lockingWindow + 1;
+      await provider.send('evm_setNextBlockTimestamp', [time]); // add totalDuration
+      await provider.send('evm_mine');
     });
-    describe('#exist', () => {
-      it('Should not be able to quit', async function () {});
+
+    it('should reverts when trying to deposit', async function () {
+      const depositAmount = utils.parseUnits('1');
+      await expect(hodl.connect(depositor2).deposit(depositAmount)).to.be.revertedWith('LOCKED');
+    });
+  });
+
+  describe('post expiry', () => {
+    before('set blocktime to expiry', async () => {
+      await provider.send('evm_setNextBlockTimestamp', [expiry.toNumber()]); // add totalDuration
+      await (provider as any).send('evm_mine');
+    });
+    const depositAmount = utils.parseUnits('1');
+    describe('#deposit', () => {
+      it('Should not be able to deposit', async function () {
+        await expect(hodl.connect(depositor1).deposit(depositAmount)).to.be.revertedWith('LOCKED');
+      });
+    });
+    describe('#quit', () => {
+      it('Should reverts when trying to call quit', async function () {
+        await expect(hodl.connect(depositor1).quit(depositAmount)).to.be.revertedWith('EXPIRED');
+      });
     });
     describe('#withdraw', () => {
       it('Should be able to withdraw full amount', async function () {});
     });
     describe('#redeem', () => {
       it('Should be able to redeem', async function () {});
+    });
+    describe('#withdrawAllPostExpiry', () => {
+      it('Should withdraw everything', async function () {});
     });
   });
 });

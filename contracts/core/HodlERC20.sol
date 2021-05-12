@@ -101,6 +101,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     feePortion = _fee;
     penaltyPortion = _penalty;
     expiry = _expiry;
+    lockWindow = _lockWindow;
     n = _n;
 
     __ERC20_init(_name, _symbol);
