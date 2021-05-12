@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: Unlicense
 pragma solidity ^0.7.0;
 
-interface IHodlShare {
+interface IHodlERC20 {
   function init(
     address _token, 
     uint256 _penalty, 
