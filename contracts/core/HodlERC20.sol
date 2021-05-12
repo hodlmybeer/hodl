@@ -22,7 +22,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   IERC20WithDetail public token;
 
   /// @notice penalty (3 decimals) for withdrawing before expiry. penalty of 20 == 2%
-  uint256 public penalty;
+  uint256 public penaltyPortion;
 
   /// @notice feePortion (3 decimals) charged to feeRecipient before penalty going to the pool. fee of 100 == 10% of total penalty
   uint256 public feePortion;
@@ -99,7 +99,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     token = IERC20WithDetail(_token);
     feeRecipient = _feeRecipient;
     feePortion = _fee;
-    penalty = _penalty;
+    penaltyPortion = _penalty;
     expiry = _expiry;
     n = _n;
 
@@ -139,19 +139,10 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   }
 
   /**
-   * @dev exist from the pool pre expiry. Will revert if the pool is expired.
-   * @dev calling this function will automatically redeem some of user's share, 
-   * porpotional to the amount they're withdrawling early. 
-   * This is to prevent a user leaving a pool to keep earning rewards
+   * @dev exist from the pool before expiry. Reverts if the pool is expired.
    * @param _amount amount of token to exist
    */
   function quit(uint256 _amount) external {
-    // force redeem
-    if (_shares[msg.sender] > 0) {
-      uint256 sharesToRedeem = _calculateSharesForceRedeem(msg.sender, _amount);
-      _redeem(sharesToRedeem);
-    }
-    
     _quit(_amount);
   }
 
@@ -175,9 +166,12 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /**
    * @dev withdraw initial deposit + reward after expiry
    */
-  function withdrawCapitalAndReward(uint256 _amount, uint256 _share) external {
-    _withdraw(_amount);
-    _redeem(_share);
+  function withdrawAllPostExpiry() external {
+    uint256 tokenAmount = balanceOf(msg.sender);
+    _withdraw(tokenAmount);
+
+    uint256 shareAmount = _shares[msg.sender];
+    _redeem(shareAmount);
   }
 
   /**
@@ -189,7 +183,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   }
 
   /**
-   * @dev withdraw all fees.
+   * @dev withdraw all fees. only callable by feeRecipient
    */
   function withdrawFee() external {
     require(msg.sender == feeRecipient, "!AUTHORIZED");
@@ -201,21 +195,38 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   }
 
   /**********************
-   * Internal Functions *
+   * private Functions *
    **********************/
 
   /**
    * @dev quit the pool before expiry. 
-   * this will send fund back the user, and increase totalFee and total Reward
+   * calling this function will automatically redeem some of user's outstanding shares, 
+   * porpotional to the amount they're withdrawling early. 
+   * This is to prevent a user leaving a pool and keep earning rewards
    * @param _amount amount to withdraw before penalty
    */
-  function _quit(uint256 _amount) internal {
+  function _quit(uint256 _amount) private {
     require(block.timestamp < expiry, "EXPIRED");
 
+    // force redeem if user has outstanding shares.
+    // Need to perform before _quit, so a user won't get rewawrd from his own exit.
+    if (_shares[msg.sender] > 0) {
+      uint256 sharesToRedeem = _calculateSharesForceRedeem(msg.sender, _amount);
+      _redeem(sharesToRedeem);
+    }
+
+    _penalizeAndExit(_amount);
+  }
+
+  /**
+   * @dev calculate the payout / reward / fee, and distribute funds
+   * @param _amount withdraw amount
+   */
+  function _penalizeAndExit(uint256 _amount) private {
     // this will revert if user is trying to call exit with amount more than his holdings.
     _burn(msg.sender, _amount);
 
-    (uint256 payout, uint256 reward, uint256 fee) = _calculatePayout(_amount);
+    (uint256 payout, uint256 reward, uint256 fee) = _calculateExitPayout(_amount);(_amount);
     
     // increase total in reward pool and fee pool.
     totalReward = totalReward.add(reward);
@@ -228,8 +239,9 @@ contract HodlERC20 is ERC20PermitUpgradeable {
 
   /**
    * @dev withdraw post expiry
+   * @param _amount withdraw amount
    */
-  function _withdraw(uint256 _amount) internal {
+  function _withdraw(uint256 _amount) private {
     require(block.timestamp >= expiry, "!EXPIRED");
     
     _burn(msg.sender, _amount);
@@ -241,8 +253,9 @@ contract HodlERC20 is ERC20PermitUpgradeable {
 
   /**
    * @dev reduce user share and send reward based on current reward pool.
+   * @param _share amount of share
    */
-  function _redeem(uint256 _share) internal {
+  function _redeem(uint256 _share) private {
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
     uint256 cachedTotalReward = totalReward;
     uint256 cachedTotalShares = totalShares;
@@ -281,12 +294,12 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   }
 
   /**
-   * @dev calcualte how much of _amount can be taken out by user, how much to reward pool and how much to feeRecipient
+   * @dev calcualte how much of _amount can be taken out by user / goes to reward pool / goes to feeRecipient
    * @param _amount total amount requested to withdraw before expiry.
    */
-  function _calculatePayout(uint256 _amount) internal view returns (uint256 payout, uint256 reward, uint256 fee) {
+  function _calculateExitPayout(uint256 _amount) internal view returns (uint256 payout, uint256 reward, uint256 fee) {
     uint256 cachedBase = BASE; // save SLOAD
-    uint256 totalPenalty = _amount.mul(penalty).div(cachedBase);
+    uint256 totalPenalty = _amount.mul(penaltyPortion).div(cachedBase);
     
     fee = totalPenalty.mul(feePortion).div(cachedBase);
     reward = totalPenalty.sub(fee);
