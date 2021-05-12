@@ -42,6 +42,9 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /// @notice current reward share by all the share holders
   uint256 public totalReward;
 
+  /// @notice total shares available to redeem
+  uint256 public totalShares;
+
   /// @notice how fast shares you get decrease over time. 
   ///         when n = 0 there's no decay. n = 1: linear decay, n = 2 exponential decay
   uint256 public n;
@@ -57,7 +60,6 @@ contract HodlERC20 is ERC20PermitUpgradeable {
 
   /// @dev record each user's share to the pool. 
   mapping(address => uint256) internal _shares; 
-
 
   /**********************
    *       Events       *
@@ -111,7 +113,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /**
    * get current share to the pool
    */
-  function getShares(address _account) external view returns (uint256) {
+  function shares(address _account) external view returns (uint256) {
     return _shares[_account];
   }
 
@@ -130,8 +132,10 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     _mint(msg.sender, _amount);
     
     // calculate shares and mint to msg.sender
-    uint256 shares = _calculateShares(_amount);
-    _shares[msg.sender] = _shares[msg.sender].add(shares);
+    uint256 sharesToMint = _calculateShares(_amount);
+    
+    totalShares = totalShares.add(sharesToMint);
+    _shares[msg.sender] = _shares[msg.sender].add(sharesToMint);
   }
 
   /**
@@ -188,7 +192,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    * @dev withdraw all fees.
    */
   function withdrawFee() external {
-    require(msg.sender == feeRecipient, "NO_AUTHORIZED");
+    require(msg.sender == feeRecipient, "!AUTHORIZED");
 
     uint256 feeToPay = totalFee;
     totalFee = 0;
@@ -226,7 +230,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    * @dev withdraw post expiry
    */
   function _withdraw(uint256 _amount) internal {
-    require(block.timestamp >= expiry, "NOT_EXPIRED");
+    require(block.timestamp >= expiry, "!EXPIRED");
     
     _burn(msg.sender, _amount);
 
@@ -241,12 +245,15 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   function _redeem(uint256 _share) internal {
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
     uint256 cachedTotalReward = totalReward;
+    uint256 cachedTotalShares = totalShares;
+
     uint256 payout = cachedTotalReward
       .mul(cachedPrecisionFactor).mul(_share)
-      .div(totalSupply()).div(cachedPrecisionFactor);
+      .div(cachedTotalShares).div(cachedPrecisionFactor);
     
     // reduce total price recorded
     totalReward = cachedTotalReward.sub(payout);
+    totalShares = cachedTotalShares.sub(_share);
 
     // transfer shares from user. this will revert if user don't have sufficient shares
     _shares[msg.sender] = _shares[msg.sender].sub(_share);
@@ -258,14 +265,16 @@ contract HodlERC20 is ERC20PermitUpgradeable {
 
   /**
    * calculate amount of shares the user is forced to redeem when quiting early
+   * @param _account account requesting
+   * @param _amount amount of token quitting
    */
   function _calculateSharesForceRedeem(address _account, uint256 _amount) internal view returns (uint256) {
     uint256 totalCapital = balanceOf(_account);
-    uint256 totalShares = _shares[_account];
+    uint256 accountShares = _shares[_account];
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
     
     return _amount
-      .mul(totalShares)
+      .mul(accountShares)
       .mul(cachedPrecisionFactor)
       .div(totalCapital)
       .div(cachedPrecisionFactor);
@@ -309,6 +318,6 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    * hook to prevent transfering the hodlToken
    */
   function _beforeTokenTransfer(address from, address to, uint256) internal override {
-    require(from == address(0) || to == address(0), "!Transfer");
+    require(from == address(0) || to == address(0), "!TRANSFER");
   }
 }

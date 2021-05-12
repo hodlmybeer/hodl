@@ -151,7 +151,16 @@ describe('HodlERC20 Tests', function () {
 
   describe('pre-expiry', () => {
     const depositAmount = utils.parseUnits('1');
-
+    describe('#transfer', () => {
+      it('Should revert when transfer is called', async function () {
+        await expect(
+          hodl.connect(depositor1).transfer(
+            depositor2.address,
+            10000
+          )
+        ).to.be.revertedWith('!TRANSFER');
+      })
+    })
     describe('#deposit', () => {
       it('Should deposit and get correct shares from depositor1 & depositor2', async function () {
         // deposit 1 WETH from depositor1
@@ -163,7 +172,7 @@ describe('HodlERC20 Tests', function () {
         const hWethBalance1 = await hodl.balanceOf(depositor1.address);
         expect(hWethBalance1).to.eq(depositAmount);
 
-        const d1Shares = await hodl.getShares(depositor1.address);
+        const d1Shares = await hodl.shares(depositor1.address);
         const d1ShareToGet = calculateShares(depositAmount, totalTime, blockTime, expiry, n);
         expect(d1Shares).to.eq(d1ShareToGet);
         expect(d1Shares.lt(depositAmount)).to.be.true;
@@ -175,7 +184,7 @@ describe('HodlERC20 Tests', function () {
         const hWethBalance2 = await hodl.balanceOf(depositor2.address);
         expect(hWethBalance2).to.eq(depositAmount);
 
-        const d2Shares = await hodl.getShares(depositor2.address);
+        const d2Shares = await hodl.shares(depositor2.address);
         expect(d1Shares.gt(d2Shares)).to.be.true;
 
         // deposit 1 WETH from depositor3
@@ -197,11 +206,10 @@ describe('HodlERC20 Tests', function () {
         expect(d1BalanceAfter.eq(0), 'D1 balance after exit should be 0').to.be.true;
 
         // shares should be zero because D1 was forced to redeem.
-        const d1SharesAfter = await hodl.getShares(depositor1.address);
+        const d1SharesAfter = await hodl.shares(depositor1.address);
         expect(d1SharesAfter.eq(0), 'D1 shares after exit should be 0').to.be.true;
 
-        // depositor 1 got corrent amount back
-
+        // check depositor 1 got corrent amount back
         const d1Penalty = depositAmount.mul(penalty).div(1000);
         
         const tokenBalanceAfter = await token.balanceOf(depositor1.address);
@@ -219,10 +227,29 @@ describe('HodlERC20 Tests', function () {
       });
     });
     describe('#withdraw', () => {
-      it('Should not be able to withdraw', async function () {});
+      it('Should not be able to withdraw', async function () {
+        await expect(
+          hodl.connect(depositor2).withdraw(10000)
+        ).to.be.revertedWith('!EXPIRED');
+      });
     });
     describe('#redeem', () => {
-      it('Should be able to redeem', async function () {});
+      it('Should be able to redeem', async function () {
+        const balanceBefore = await token.balanceOf(depositor2.address);
+        const d2Shares = await hodl.shares(depositor2.address)
+        const totalRewards = await hodl.totalReward()
+        const redeemShares = d2Shares.div(2)
+
+        const totalShares = await hodl.totalShares()
+        
+        const amountToGet = totalRewards.mul(redeemShares).div(totalShares);
+        await hodl.connect(depositor2).redeem(redeemShares)
+        const balanceAfter = await token.balanceOf(depositor2.address);
+        expect(balanceAfter.sub(balanceBefore).eq(amountToGet)).to.be.true
+
+        const totalSharesAfter = await hodl.totalShares()
+        expect(totalShares.sub(totalSharesAfter).eq(redeemShares)).to.be.true
+      });
     });
   });
 
