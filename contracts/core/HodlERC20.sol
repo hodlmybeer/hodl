@@ -195,6 +195,15 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     token.safeTransfer(msg.sender, feeToPay);
   }
 
+  /**
+   * @dev donate asset to the reward pool. (can be use by projects to reward holders)
+   * @param _amount amount to donate
+   */
+  function donate(uint256 _amount) external {
+    token.safeTransferFrom(msg.sender, address(this), _amount);
+    totalReward = totalReward.add(_amount);
+  }
+
   /**********************
    * private Functions *
    **********************/

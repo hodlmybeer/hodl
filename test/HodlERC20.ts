@@ -257,13 +257,22 @@ describe('HodlERC20 Tests', function () {
         );
       });
     });
+    describe('#describe', () => {
+      it('Should be able to donate any value', async function () {
+        const beforeDonation = await hodl.totalReward()
+        const amountToDoante = utils.parseUnits('0.5');
+        await hodl.connect(depositor2).donate(amountToDoante)
+        const afterDonation = await hodl.totalReward()
+        expect(afterDonation.sub(beforeDonation).eq(amountToDoante)).to.be.true
+      });
+    })
   });
 
   describe('lock period', () => {
     before('increase blocktime', async () => {
       const time = expiry.toNumber() - lockingWindow + 1;
       await provider.send('evm_setNextBlockTimestamp', [time]); // add totalDuration
-      await provider.send('evm_mine');
+      await provider.send('evm_mine', []);
     });
 
     it('should reverts when trying to deposit', async function () {
@@ -275,7 +284,7 @@ describe('HodlERC20 Tests', function () {
   describe('post expiry', () => {
     before('set blocktime to expiry', async () => {
       await provider.send('evm_setNextBlockTimestamp', [expiry.toNumber()]); // add totalDuration
-      await (provider as any).send('evm_mine');
+      await provider.send('evm_mine', []);
     });
     const depositAmount = utils.parseUnits('1');
     describe('#deposit', () => {
