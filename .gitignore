@@ -7,3 +7,4 @@ typechain
 .vscode/
 coverage
 coverage.json
+.secret
