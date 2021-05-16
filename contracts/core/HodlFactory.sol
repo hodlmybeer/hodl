@@ -129,7 +129,7 @@ contract HodlFactory is HodlSpawner {
           name = _concat("Hodl", tokenName);
 
           string memory tokenSymbol = token.symbol();
-          symbol = _concat("hl", tokenSymbol);
+          symbol = _concat("h", tokenSymbol);
         }
 
         address _implementation = implementation; // cache implementation address
@@ -140,8 +140,9 @@ contract HodlFactory is HodlSpawner {
             _penalty,
             _lockWindow,
             _expiry,
-            _feeRecipient,
+            _fee,
             _n,
+            _feeRecipient,
             name,
             symbol
         );
@@ -185,6 +186,7 @@ contract HodlFactory is HodlSpawner {
         uint256 _n,
         address _feeRecipient
     ) external view returns (address) {
+        
         bytes32 id = _getHodlId(_token, _penalty, _lockWindow, _expiry, _fee, _n, _feeRecipient);
         return _idToAddress[id];
     }
@@ -211,6 +213,14 @@ contract HodlFactory is HodlSpawner {
     ) external view returns (address) {
         address _implementation = implementation;
 
+        // create another scope to avoid stack-too-deep error
+        IERC20WithDetail token = IERC20WithDetail(_token);
+        string memory tokenName = token.name();
+        string memory name = _concat("Hodl", tokenName);
+
+        string memory tokenSymbol = token.symbol();
+        string memory symbol = _concat("h", tokenSymbol);
+        
         bytes memory initializationCalldata = abi.encodeWithSelector(
             IHodlERC20(_implementation).init.selector,
             _token,
@@ -219,7 +229,9 @@ contract HodlFactory is HodlSpawner {
             _expiry,
             _fee,
             _n,
-            _feeRecipient
+            _feeRecipient,
+            name,
+            symbol
         );
         return _computeAddress(_implementation, initializationCalldata);
     }

@@ -64,7 +64,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /**********************
    *       Events       *
    **********************/
-  event Deposit(address depositor, uint256 amount);
+  event Deposit(address depositor, uint256 amount, uint256 shares);
 
   event Exit(address quitter, uint256 amountOut, uint256 reward, uint256 fee);
 
@@ -137,6 +137,8 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     
     totalShares = totalShares.add(sharesToMint);
     _shares[msg.sender] = _shares[msg.sender].add(sharesToMint);
+
+    emit Deposit(msg.sender, _amount, sharesToMint);
   }
 
   /**
