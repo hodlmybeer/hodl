@@ -3,6 +3,7 @@ pragma solidity ^0.7.0;
 
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/drafts/ERC20PermitUpgradeable.sol";
 import {IERC20WithDetail} from "../interfaces/IERC20WithDetail.sol";
+import {IHodlERC20} from "../interfaces/IHodlERC20.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
@@ -15,7 +16,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
  * 
  * You can withdraw anytime before expiry but you will get penalized. the penalty amount will go to the reward pool.
  */
-contract HodlERC20 is ERC20PermitUpgradeable {
+contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   using SafeERC20 for IERC20WithDetail;
   using SafeMath for uint256;
 
@@ -90,7 +91,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     address _feeRecipient, 
     string memory _name, 
     string memory _symbol
-  ) external initializer {
+  ) external initializer override {
     require(_penalty < BASE, "INVALID_PENALTY");
     require(block.timestamp + _lockWindow < _expiry, "INVALID_EXPIRY");
 

@@ -7,6 +7,8 @@ interface IHodlERC20 {
     uint256 _penalty, 
     uint256 _lockWindow, 
     uint256 _expiry, 
+    uint256 _fee,
+    uint256 _n,
     address _feeRecipient, 
     string memory _name, 
     string memory _symbol
