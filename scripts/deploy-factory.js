@@ -3,7 +3,7 @@ const hre = require('hardhat')
 async function main() {
 
   // change this to the implementation address
-  const implAddress = '0xaC8F621Ee9dEFADb61974b065Dd016517BE8d550'
+  const implAddress = '0xe8744164774D685F54108DD295735f658bae6491'
   console.log(`Deploying Factory with implementation: ${implAddress}`)
 
   const HodlFactory = await hre.ethers.getContractFactory("HodlFactory");

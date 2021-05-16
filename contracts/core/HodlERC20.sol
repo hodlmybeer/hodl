@@ -73,6 +73,8 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
 
   event Redeem(address recipient, uint256 shareBurned, uint256 reward);
 
+  event Donate(address donator, uint256 amount);
+
   /**
    * @param _token address of the token of this hold contract
    * @param _penalty amount
@@ -205,6 +207,8 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   function donate(uint256 _amount) external {
     token.safeTransferFrom(msg.sender, address(this), _amount);
     totalReward = totalReward.add(_amount);
+
+    emit Donate(msg.sender, _amount);
   }
 
   /**********************
