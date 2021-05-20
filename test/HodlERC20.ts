@@ -163,10 +163,8 @@ describe('HodlERC20 Tests', function () {
       it('Should deposit and get correct shares from depositor1 & depositor2', async function () {
         // deposit 1 WETH from depositor1
         await token.connect(depositor1).approve(hodl.address, ethers.constants.MaxUint256);
-        const txRes = await hodl.connect(depositor1).deposit(depositAmount);
-        const block = await provider.getBlock(txRes.blockNumber);
-        const blockTime = block.timestamp;
-
+        await hodl.connect(depositor1).deposit(depositAmount);
+        
         const hWethBalance1 = await hodl.balanceOf(depositor1.address);
         expect(hWethBalance1).to.eq(depositAmount);
 
