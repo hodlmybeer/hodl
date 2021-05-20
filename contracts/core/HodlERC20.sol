@@ -336,9 +336,6 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
     fee = totalPenalty.mul(feePortion).div(cachedBase);
     reward = totalPenalty.sub(fee);
     payout = _amount.sub(totalPenalty);
-
-    // extra assertion to make sure user is not taking more than he's supposed to.
-    require(payout.add(fee).add(reward) == _amount, "INVALID_OPERATION");
   }
 
   /**

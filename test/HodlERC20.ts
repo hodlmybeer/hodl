@@ -226,6 +226,28 @@ describe('HodlERC20 Tests', function () {
         const totalReward = await hodl.totalReward();
         expect(totalReward.eq(_totalRewards)).to.be.true;
       });
+      it('Should be able to quit when user have no shares', async function () {
+        const d3Shares = await hodl.shares(depositor3.address);
+        await hodl.connect(depositor3).redeem(d3Shares);
+
+        const tokenBalanceBefore = await token.balanceOf(depositor3.address);
+
+        const d3balance = await hodl.balanceOf(depositor3.address);
+        await hodl.connect(depositor3).quit(d3balance);
+
+        // share balance should be 0
+        const d3BalanceAfter = await hodl.balanceOf(depositor3.address);
+        expect(d3BalanceAfter.eq(0), 'D3 balance after exit should be 0').to.be.true;
+
+        // check depositor 1 got corrent amount back
+        const d3Penalty = depositAmount.mul(penalty).div(1000);
+
+        const tokenBalanceAfter = await token.balanceOf(depositor3.address);
+        expect(
+          tokenBalanceAfter.sub(tokenBalanceBefore).eq(depositAmount.sub(d3Penalty)),
+          'penalty amount'
+        ).to.be.true;
+      });
     });
     describe('#withdraw', () => {
       it('Should not be able to withdraw', async function () {
@@ -306,7 +328,10 @@ describe('HodlERC20 Tests', function () {
         // console.log(`balance1Before`, balance1Before.toString())
       });
     });
-    describe('#withdrawFee', () => {
+    describe('#withdrawFee', () => { 
+      it('Should revert from non-recipient', async function () {
+        await expect(hodl.connect(depositor2).withdrawFee()).to.be.revertedWith('!AUTHORIZED');
+      })
       it('Should be able to withdraw full amount', async function () {
         const feeRecipientBalanceBefore = await token.balanceOf(feeRecipient.address)
         const totalFee = await hodl.totalFee()
