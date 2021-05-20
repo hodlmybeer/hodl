@@ -115,6 +115,13 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   }
 
   /**
+   * @dev returns how much reward you get from burning {_share} amount of shares.
+   */
+  function rewardFromShares(uint256 _share) external view returns (uint256) {
+    return _rewardFromShares(_share);
+  }
+
+  /**
    * get current share to the pool
    */
   function shares(address _account) external view returns (uint256) {
@@ -215,6 +222,21 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * private Functions *
    **********************/
 
+   /**
+   * @dev calculate reward from shares
+   * @param _share amount of shares
+   */
+  function _rewardFromShares(uint256 _share) internal view returns (uint256) {
+    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
+    uint256 cachedTotalReward = totalReward;
+    uint256 cachedTotalShares = totalShares;
+
+    uint256 payout = cachedTotalReward
+      .mul(cachedPrecisionFactor).mul(_share)
+      .div(cachedTotalShares).div(cachedPrecisionFactor);
+    return payout;
+  }
+
   /**
    * @dev quit the pool before expiry. 
    * calling this function will automatically redeem some of user's outstanding shares, 
@@ -273,17 +295,10 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _share amount of share
    */
   function _redeem(uint256 _share) private {
-    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-    uint256 cachedTotalReward = totalReward;
-    uint256 cachedTotalShares = totalShares;
-
-    uint256 payout = cachedTotalReward
-      .mul(cachedPrecisionFactor).mul(_share)
-      .div(cachedTotalShares).div(cachedPrecisionFactor);
-    
+    uint256 payout  = _rewardFromShares(_share);
     // reduce total price recorded
-    totalReward = cachedTotalReward.sub(payout);
-    totalShares = cachedTotalShares.sub(_share);
+    totalReward = totalReward.sub(payout);
+    totalShares = totalShares.sub(_share);
 
     // transfer shares from user. this will revert if user don't have sufficient shares
     _shares[msg.sender] = _shares[msg.sender].sub(_share);

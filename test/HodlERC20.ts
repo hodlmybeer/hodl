@@ -2,7 +2,7 @@ import { ethers, waffle } from 'hardhat';
 import { expect } from 'chai';
 import { HodlERC20, MockERC20 } from '../typechain';
 import { BigNumber, utils } from 'ethers';
-import { calculateShares } from './utils';
+// import { calculateShares } from './utils';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 describe('HodlERC20 Tests', function () {
@@ -171,7 +171,7 @@ describe('HodlERC20 Tests', function () {
         expect(hWethBalance1).to.eq(depositAmount);
 
         const d1Shares = await hodl.shares(depositor1.address);
-        const d1ShareToGet = calculateShares(depositAmount, totalTime, blockTime, expiry, n);
+        const d1ShareToGet = await hodl.calculateShares(depositAmount);
         expect(d1Shares).to.eq(d1ShareToGet);
         expect(d1Shares.lt(depositAmount)).to.be.true;
 
@@ -298,13 +298,39 @@ describe('HodlERC20 Tests', function () {
       });
     });
     describe('#withdraw', () => {
-      it('Should be able to withdraw full amount', async function () {});
+      it('Should be able to withdraw full amount', async function () {
+        const balance1Before = await hodl.balanceOf(depositor1.address)
+        await hodl.connect(depositor1).withdraw(balance1Before);
+        const balance1After = await hodl.balanceOf(depositor1.address)
+        expect(balance1After.isZero()).to.be.true
+        // console.log(`balance1Before`, balance1Before.toString())
+      });
+    });
+    describe('#withdrawFee', () => {
+      it('Should be able to withdraw full amount', async function () {
+        const feeRecipientBalanceBefore = await token.balanceOf(feeRecipient.address)
+        const totalFee = await hodl.totalFee()
+        await hodl.connect(feeRecipient).withdrawFee();
+        const totalFeeAfter = await hodl.totalFee()
+        expect(totalFeeAfter.isZero()).to.be.true
+        const feeRecipientBalanceAfter = await token.balanceOf(feeRecipient.address)
+        expect(feeRecipientBalanceAfter.sub(feeRecipientBalanceBefore).eq(totalFee)).to.be.true
+        
+      });
     });
     describe('#redeem', () => {
       it('Should be able to redeem', async function () {});
     });
     describe('#withdrawAllPostExpiry', () => {
-      it('Should withdraw everything', async function () {});
+      it('Should withdraw everything', async function () {
+        const balanceBefore = await token.balanceOf(depositor2.address)
+        const shares = await hodl.shares(depositor2.address)
+        const reward = await hodl.rewardFromShares(shares)
+        const balance = await hodl.balanceOf(depositor2.address)
+        await hodl.connect(depositor2).withdrawAllPostExpiry()
+        const balanceAfter = await token.balanceOf(depositor2.address)
+        expect(balanceAfter.sub(balanceBefore).eq(reward.add(balance))).to.be.true
+      });
     });
   });
 });
