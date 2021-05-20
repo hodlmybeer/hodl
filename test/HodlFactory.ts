@@ -46,9 +46,13 @@ describe('Hodl Factory Tests', function () {
     const targetAddress = await factory.getTargetHTokenAddress(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
     const deployedAddress = await factory.getCreatedHToken(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
     expect(deployedAddress.toLowerCase() === ethers.constants.AddressZero).to.be.true
-    await factory.createHodlERC20(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
+    await factory.connect(creator).createHodlERC20(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
     
     const deployedAddresAfter = await factory.getCreatedHToken(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
     expect(targetAddress === deployedAddresAfter).to.be.true
+  })
+  it('should revert when creating the same token', async() => {
+    await expect(factory.connect(creator).createHodlERC20(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
+    ).to.be.revertedWith('CREATED');
   })
 });
