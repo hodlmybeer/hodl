@@ -123,7 +123,6 @@ describe('HodlERC20 Tests', function () {
           symbol
         );
 
-        const _totalFee = await hodl.totalFee();
         const reward = await hodl.totalReward();
         const totalSupply = await hodl.totalSupply();
         const _expiry = await hodl.expiry();
@@ -133,7 +132,6 @@ describe('HodlERC20 Tests', function () {
 
         totalTime = await hodl.totalTime();
 
-        expect(_totalFee.isZero()).to.be.true;
         expect(reward.isZero()).to.be.true;
         expect(totalSupply.isZero()).to.be.true;
         expect(_expiry.eq(expiry)).to.be.true;
@@ -195,6 +193,8 @@ describe('HodlERC20 Tests', function () {
         const tokenBalanceBefore = await token.balanceOf(depositor1.address);
 
         const d1Balance = await hodl.balanceOf(depositor1.address);
+        const feeRecipientBalanceBefore = await token.balanceOf(feeRecipient.address)
+
         await hodl.connect(depositor1).quit(d1Balance);
 
         // share balance should be 0
@@ -216,8 +216,9 @@ describe('HodlERC20 Tests', function () {
 
         // check total fee
         const feeCollected = d1Penalty.mul(fee).div(1000);
-        const totalFee = await hodl.totalFee();
-        expect(totalFee.eq(feeCollected)).to.be.true;
+        const feeRecipientBalanceAfter = await token.balanceOf(feeRecipient.address)
+        
+        expect(feeRecipientBalanceAfter.sub(feeRecipientBalanceBefore).eq(feeCollected)).to.be.true;
 
         // check total fee
         const _totalRewards = d1Penalty.sub(feeCollected);
@@ -324,21 +325,6 @@ describe('HodlERC20 Tests', function () {
         const balance1After = await hodl.balanceOf(depositor1.address)
         expect(balance1After.isZero()).to.be.true
         // console.log(`balance1Before`, balance1Before.toString())
-      });
-    });
-    describe('#withdrawFee', () => { 
-      it('Should revert from non-recipient', async function () {
-        await expect(hodl.connect(depositor2).withdrawFee()).to.be.revertedWith('!AUTHORIZED');
-      })
-      it('Should be able to withdraw full amount', async function () {
-        const feeRecipientBalanceBefore = await token.balanceOf(feeRecipient.address)
-        const totalFee = await hodl.totalFee()
-        await hodl.connect(feeRecipient).withdrawFee();
-        const totalFeeAfter = await hodl.totalFee()
-        expect(totalFeeAfter.isZero()).to.be.true
-        const feeRecipientBalanceAfter = await token.balanceOf(feeRecipient.address)
-        expect(feeRecipientBalanceAfter.sub(feeRecipientBalanceBefore).eq(totalFee)).to.be.true
-        
       });
     });
     describe('#redeem', () => {

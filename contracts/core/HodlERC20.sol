@@ -28,9 +28,6 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   /// @notice feePortion (3 decimals) charged to feeRecipient before penalty going to the pool. fee of 100 == 10% of total penalty
   uint256 public feePortion;
 
-  /// @notice total fee accumulated in this pool.
-  uint256 public totalFee;
-
   /// @notice the total duration from creation to expiry.
   uint256 public totalTime;
 
@@ -196,18 +193,6 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   }
 
   /**
-   * @dev withdraw all fees. only callable by feeRecipient
-   */
-  function withdrawFee() external {
-    require(msg.sender == feeRecipient, "!AUTHORIZED");
-
-    uint256 feeToPay = totalFee;
-    totalFee = 0;
-
-    token.safeTransfer(msg.sender, feeToPay);
-  }
-
-  /**
    * @dev donate asset to the reward pool. (can be use by projects to reward holders)
    * @param _amount amount to donate
    */
@@ -228,12 +213,10 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    */
   function _rewardFromShares(uint256 _share) internal view returns (uint256) {
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-    uint256 cachedTotalReward = totalReward;
-    uint256 cachedTotalShares = totalShares;
 
-    uint256 payout = cachedTotalReward
+    uint256 payout = totalReward
       .mul(cachedPrecisionFactor).mul(_share)
-      .div(cachedTotalShares).div(cachedPrecisionFactor);
+      .div(totalShares).div(cachedPrecisionFactor);
     return payout;
   }
 
@@ -267,13 +250,13 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
 
     (uint256 payout, uint256 reward, uint256 fee) = _calculateExitPayout(_amount);(_amount);
     
-    // increase total in reward pool and fee pool.
+    // increase total in reward pool
     totalReward = totalReward.add(reward);
-    totalFee = totalFee.add(fee);
 
     emit Exit(msg.sender, payout, reward, fee);
 
     token.safeTransfer(msg.sender, payout);
+    token.safeTransfer(feeRecipient, fee);
   }
 
   /**
@@ -300,7 +283,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
     totalReward = totalReward.sub(payout);
     totalShares = totalShares.sub(_share);
 
-    // transfer shares from user. this will revert if user don't have sufficient shares
+    // subtrace shares from user shares. this will revert if user doesn't have sufficient shares
     _shares[msg.sender] = _shares[msg.sender].sub(_share);
 
     emit Redeem(msg.sender, _share, payout);
