@@ -75,6 +75,21 @@ describe('HodlERC20 Tests', function () {
           )
         ).to.be.revertedWith('INVALID_PENALTY');
       });
+      it('Should revert when init with invalid fee', async function () {
+        await expect(
+          hodl.init(
+            token.address,
+            penalty,
+            lockingWindow,
+            expiry,
+            1001,
+            n,
+            feeRecipient.address,
+            name,
+            symbol
+          )
+        ).to.be.revertedWith('INVALID_FEE');
+      });
 
       it('Should revert when init with invalid expiry', async function () {
         const wrongExpiry = expiry.sub(86400 * 30);

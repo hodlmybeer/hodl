@@ -92,6 +92,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
     string memory _symbol
   ) external initializer override {
     require(_penalty < BASE, "INVALID_PENALTY");
+    require(_fee < BASE, "INVALID_FEE");
     require(block.timestamp + _lockWindow < _expiry, "INVALID_EXPIRY");
 
     totalTime = _expiry - block.timestamp;
@@ -255,8 +256,8 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
 
     emit Exit(msg.sender, payout, reward, fee);
 
-    token.safeTransfer(msg.sender, payout);
-    token.safeTransfer(feeRecipient, fee);
+    if(payout > 0) token.safeTransfer(msg.sender, payout);
+    if(fee > 0) token.safeTransfer(feeRecipient, fee);
   }
 
   /**
@@ -288,7 +289,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
 
     emit Redeem(msg.sender, _share, payout);
 
-    token.safeTransfer(msg.sender, payout);
+    if (payout > 0) token.safeTransfer(msg.sender, payout);
   }
 
   /**
