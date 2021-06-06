@@ -8,7 +8,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 describe('HodlERC20 Tests', function () {
   const provider = waffle.provider;
   const totalDuration = 86400 * 3; // 3 days period
-  const expiry = BigNumber.from(parseInt((Date.now() / 1000).toString()) + totalDuration);
+  let expiry: BigNumber;
   let hodl: HodlERC20;
   let token: MockERC20;
   let bonusToken: MockERC20;
@@ -30,6 +30,10 @@ describe('HodlERC20 Tests', function () {
   const n = 1; // linear decay
 
   this.beforeAll('Set accounts', async () => {
+    const blockNumber = await provider.getBlockNumber();
+    const currentBlock = await provider.getBlock(blockNumber);
+    expiry = BigNumber.from(parseInt((currentBlock.timestamp).toString()) + totalDuration);
+
     accounts = await ethers.getSigners();
     const [_depositor1, _depositor2, _depositor3, _depositor4, _feeRecipient, _donor] = accounts;
 
@@ -81,7 +85,7 @@ describe('HodlERC20 Tests', function () {
             feeRecipient.address,
             name,
             symbol,
-            '0x0000000000000000000000000000000000000000',
+            ethers.constants.AddressZero,
           )
         ).to.be.revertedWith('INVALID_PENALTY');
       });
@@ -97,7 +101,7 @@ describe('HodlERC20 Tests', function () {
             feeRecipient.address,
             name,
             symbol,
-            '0x0000000000000000000000000000000000000000',
+            ethers.constants.AddressZero,
           )
         ).to.be.revertedWith('INVALID_FEE');
       });
@@ -115,7 +119,7 @@ describe('HodlERC20 Tests', function () {
             feeRecipient.address,
             name,
             symbol,
-            '0x0000000000000000000000000000000000000000',
+            ethers.constants.AddressZero,
           )
         ).to.be.revertedWith('INVALID_EXPIRY');
       });
@@ -133,7 +137,7 @@ describe('HodlERC20 Tests', function () {
             feeRecipient.address,
             name,
             symbol,
-            '0x0000000000000000000000000000000000000000',
+            ethers.constants.AddressZero,
           )
         ).to.be.revertedWith('INVALID_EXPIRY');
       });
@@ -173,7 +177,7 @@ describe('HodlERC20 Tests', function () {
 
       it('Should revert when trying to re-init', async function () {
         await expect(
-          hodl.init(token.address, 0, 0, 0, 0, 0, feeRecipient.address, name, symbol,'0x0000000000000000000000000000000000000000')
+          hodl.init(token.address, 0, 0, 0, 0, 0, feeRecipient.address, name, symbol,ethers.constants.AddressZero)
         ).to.be.revertedWith('Initializable: contract is already initialized');
       });
     });

@@ -1,13 +1,13 @@
-import { ethers } from 'hardhat';
+import { ethers, waffle } from 'hardhat';
 import { expect } from 'chai';
 import { HodlERC20, MockERC20 } from '../typechain';
 import { BigNumber, utils } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 
 describe('HodlERC20 Tests Without Bonus Token', function () {
-  //TODO x2 is necessary because the main test batch fast-forward mines to expiry
-  const totalDuration = 86400 * 3 * 2; // 3 days period
-  const expiry = BigNumber.from(parseInt((Date.now() / 1000).toString()) + totalDuration);
+  const provider = waffle.provider;
+  const totalDuration = 86400 * 3; // 3 days period
+  let expiry: BigNumber;
   let hodl: HodlERC20;
   let token: MockERC20;
   let bonusToken: MockERC20;
@@ -27,6 +27,10 @@ describe('HodlERC20 Tests Without Bonus Token', function () {
   const n = 1; // linear decay
 
   this.beforeAll('Set accounts', async () => {
+    const blockNumber = await provider.getBlockNumber();
+    const currentBlock = await provider.getBlock(blockNumber);
+    expiry = BigNumber.from(parseInt((currentBlock.timestamp).toString()) + totalDuration);
+
     accounts = await ethers.getSigners();
     const [_depositor1, _depositor2, _depositor3, _feeRecipient] = accounts;
 
@@ -70,7 +74,7 @@ describe('HodlERC20 Tests Without Bonus Token', function () {
       feeRecipient.address,
       name,
       symbol,
-      '0x0000000000000000000000000000000000000000',
+      ethers.constants.AddressZero,
     );
   });
 

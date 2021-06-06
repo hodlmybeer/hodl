@@ -106,7 +106,7 @@ contract HodlFactory is HodlSpawner {
      * @param _expiry expiry timestamp
      * @param _fee fee out of every 1000 penalty 
      * @param _feeRecipient address that collect fees
-     * @param _bonusToken extra reward token (optional, defaults to base token if address is zero)
+     * @param _bonusToken extra reward token (optional, set to zero address if using just the base token)
      * @return newHodl newly deployed contract address
      */
     function createHodlERC20(

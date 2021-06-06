@@ -85,7 +85,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _expiry timestamp in sec, after which the locking is over.
    * @param _name name of the token
    * @param _symbol symbol of the new token
-   * @param _bonusToken address of the bonus reward token (extra token for donations). Not required, defaults to base token if the address is zero
+   * @param _bonusToken address of the bonus reward token (extra token for donations). Not required, set to zero address if using just the base token.
    */
   function init(
     address _token, 
@@ -106,12 +106,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
     totalTime = _expiry - block.timestamp;
 
     token = IERC20WithDetail(_token);
-    // bonusToken is not required, defaults to base token
-    if (_bonusToken != address(0)) {
-        bonusToken = IERC20WithDetail(_bonusToken);
-    } else {
-        bonusToken = token;
-    }
+    bonusToken = IERC20WithDetail(_bonusToken);
     feeRecipient = _feeRecipient;
     feePortion = _fee;
     penaltyPortion = _penalty;
@@ -238,7 +233,8 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
 
    /**
    * @dev calculate reward from shares
-   * @param _share amount of shares
+   * @param _share number of shares
+   * @param _tokenTotalReward total token amount for which to calculate a reward (either base or bonus token reward)
    */
     function _rewardFromShares(uint256 _share, uint256 _tokenTotalReward) internal view returns (uint256) {
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
