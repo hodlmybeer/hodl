@@ -43,16 +43,16 @@ describe('Hodl Factory Tests', function () {
 
   it('deploy a new clone', async() => {
 
-    const targetAddress = await factory.getTargetHTokenAddress(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
-    const deployedAddress = await factory.getCreatedHToken(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
+    const targetAddress = await factory.getTargetHTokenAddress(token.address, penalty, lockingWindow, expiry, fee, n, creator.address, '0x0000000000000000000000000000000000000000')
+    const deployedAddress = await factory.getCreatedHToken(token.address, penalty, lockingWindow, expiry, fee, n, creator.address, '0x0000000000000000000000000000000000000000')
     expect(deployedAddress.toLowerCase() === ethers.constants.AddressZero).to.be.true
-    await factory.connect(creator).createHodlERC20(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
+    await factory.connect(creator).createHodlERC20(token.address, penalty, lockingWindow, expiry, fee, n, creator.address, '0x0000000000000000000000000000000000000000')
     
-    const deployedAddresAfter = await factory.getCreatedHToken(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
-    expect(targetAddress === deployedAddresAfter).to.be.true
+    const deployedAddressAfter = await factory.getCreatedHToken(token.address, penalty, lockingWindow, expiry, fee, n, creator.address, '0x0000000000000000000000000000000000000000')
+    expect(targetAddress === deployedAddressAfter).to.be.true
   })
   it('should revert when creating the same token', async() => {
-    await expect(factory.connect(creator).createHodlERC20(token.address, penalty, lockingWindow, expiry, fee, n, creator.address)
+    await expect(factory.connect(creator).createHodlERC20(token.address, penalty, lockingWindow, expiry, fee, n, creator.address, '0x0000000000000000000000000000000000000000')
     ).to.be.revertedWith('CREATED');
   })
 });
