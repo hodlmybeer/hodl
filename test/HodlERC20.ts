@@ -409,13 +409,18 @@ describe('HodlERC20 Tests', function () {
     });
     describe('#withdrawAllPostExpiry', () => {
       it('Should withdraw everything', async function () {
-        const balanceBefore = await token.balanceOf(depositor2.address)
+        const tokenBalanceBefore = await token.balanceOf(depositor2.address)
+        const rewardBalanceBefore = await bonusToken.balanceOf(depositor2.address)
         const shares = await hodl.shares(depositor2.address)
-        const reward = await hodl.rewardFromShares(shares)
+        
+        const expectedReward = await hodl.rewardFromShares(shares)
+        const expectedBonus = await hodl.bonusFromShares(shares)
         const balance = await hodl.balanceOf(depositor2.address)
         await hodl.connect(depositor2).withdrawAllPostExpiry()
-        const balanceAfter = await token.balanceOf(depositor2.address)
-        expect(balanceAfter.sub(balanceBefore).eq(reward.add(balance))).to.be.true
+        const tokenBalanceAfter = await token.balanceOf(depositor2.address)
+        const rewardBalanceAfter = await bonusToken.balanceOf(depositor2.address)
+        expect(tokenBalanceAfter.sub(tokenBalanceBefore).eq(expectedReward.add(balance))).to.be.true
+        expect(rewardBalanceAfter.sub(rewardBalanceBefore).eq(expectedBonus)).to.be.true
       });
     });
   });
