@@ -11,11 +11,18 @@ async function main() {
 
   // We get the contract to deploy
   const Hodl = await hre.ethers.getContractFactory("HodlERC20");
-  const hodlLogic = await Hodl.deploy();
+  const hodlLogic = await Hodl.deploy({gasPrice: 30000000000});
 
   await hodlLogic.deployed();
 
   console.log("Hodl logic contract deployed at:", hodlLogic.address);
+
+  const HodlFactory = await hre.ethers.getContractFactory("HodlFactory");
+  const factory = await HodlFactory.deploy(hodlLogic.address, {gasPrice: 30000000000});
+
+  await factory.deployed();
+
+  console.log("Factory contract deployed at:", factory.address);
 }
 
 // We recommend this pattern to be able to use async/await everywhere

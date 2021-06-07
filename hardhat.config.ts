@@ -32,6 +32,12 @@ export default {
         mnemonic: mnemonic,
       },
     },
+    kovan: {
+      url: `https://kovan.infura.io/v3/${infuraKey}`,
+      accounts: {
+        mnemonic: mnemonic,
+      },
+    },
   },
   solidity: '0.7.3',
   settings: {
