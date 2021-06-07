@@ -83,7 +83,7 @@ contract HodlFactory is HodlSpawner {
       implementation = _implementation;
     }
 
-    /// @notice emitted when the factory creates a new Option
+    /// @notice emitted when the factory creates a new hToken "barrel"
     event HodlCreated(
         address contractAddress,
         address indexed token,
@@ -93,7 +93,8 @@ contract HodlFactory is HodlSpawner {
         uint256 feePortion,
         uint256 n,
         address feeRecipient,
-        address creator
+        address creator,
+        address bonusToken
     );
 
     /**
@@ -105,6 +106,7 @@ contract HodlFactory is HodlSpawner {
      * @param _expiry expiry timestamp
      * @param _fee fee out of every 1000 penalty 
      * @param _feeRecipient address that collect fees
+     * @param _bonusToken extra reward token (optional, set to zero address if using just the base token)
      * @return newHodl newly deployed contract address
      */
     function createHodlERC20(
@@ -114,10 +116,19 @@ contract HodlFactory is HodlSpawner {
         uint256 _expiry,
         uint256 _fee,
         uint256 _n,
-        address _feeRecipient
+        address _feeRecipient,
+        address _bonusToken
     ) external returns (address newHodl) {
-
-        bytes32 id = _getHodlId(_token, _penalty, _lockWindow, _expiry, _fee, _n, _feeRecipient);
+         bytes32 id = _getHodlId(
+                _token,
+                _penalty,
+                _lockWindow,
+                _expiry,
+                _fee,
+                _n,
+                _feeRecipient,
+                _bonusToken
+            );
         require(_idToAddress[id] == address(0), "CREATED");
         string memory name;
         string memory symbol;
@@ -132,22 +143,21 @@ contract HodlFactory is HodlSpawner {
           symbol = _concat("h", tokenSymbol);
         }
 
-        address _implementation = implementation; // cache implementation address
-
         bytes memory initializationCalldata = abi.encodeWithSelector(
-            IHodlERC20(_implementation).init.selector,
-            _token,
-            _penalty,
-            _lockWindow,
-            _expiry,
-            _fee,
-            _n,
-            _feeRecipient,
-            name,
-            symbol
+                IHodlERC20(implementation).init.selector,
+                    _token,
+                    _penalty,
+                    _lockWindow,
+                    _expiry,
+                    _fee,
+                    _n,
+                    _feeRecipient,
+                    name,
+                    symbol,
+                    _bonusToken
         );
 
-        newHodl = _spawn(_implementation, initializationCalldata);
+        newHodl = _spawn(implementation, initializationCalldata);
         
         _isValidHToken[newHodl] = true;
         _idToAddress[id] = newHodl;
@@ -161,7 +171,8 @@ contract HodlFactory is HodlSpawner {
             _fee,
             _n,
             _feeRecipient,
-            msg.sender
+            msg.sender,
+            _bonusToken
         );
 
         return newHodl;
@@ -174,7 +185,8 @@ contract HodlFactory is HodlSpawner {
      * @param _lockWindow duration locked before expiry
      * @param _expiry expiry timestamp
      * @param _fee fee out of every 1000 penalty 
-     * @param _feeRecipient address that collect fees
+     * @param _feeRecipient address that collects fees
+     * @param _bonusToken extra token for donations
      * @return
      */
     function getCreatedHToken(
@@ -184,10 +196,20 @@ contract HodlFactory is HodlSpawner {
         uint256 _expiry,
         uint256 _fee,
         uint256 _n,
-        address _feeRecipient
+        address _feeRecipient,
+        address _bonusToken
     ) external view returns (address) {
-        
-        bytes32 id = _getHodlId(_token, _penalty, _lockWindow, _expiry, _fee, _n, _feeRecipient);
+        bytes32 id =
+            _getHodlId(
+                _token,
+                _penalty,
+                _lockWindow,
+                _expiry,
+                _fee,
+                _n,
+                _feeRecipient,
+                _bonusToken
+            );
         return _idToAddress[id];
     }
 
@@ -200,6 +222,7 @@ contract HodlFactory is HodlSpawner {
      * @param _expiry expiry timestamp
      * @param _fee fee out of every 1000 penalty 
      * @param _feeRecipient address that collect fees
+     * @param _bonusToken extra token for donations
      * @return
      */
     function getTargetHTokenAddress(
@@ -209,19 +232,25 @@ contract HodlFactory is HodlSpawner {
         uint256 _expiry,
         uint256 _fee,
         uint256 _n,
-        address _feeRecipient
+        address _feeRecipient,
+        address _bonusToken
     ) external view returns (address) {
         address _implementation = implementation;
+        string memory name;
+        string memory symbol;
 
         // create another scope to avoid stack-too-deep error
+        {
         IERC20WithDetail token = IERC20WithDetail(_token);
         string memory tokenName = token.name();
-        string memory name = _concat("Hodl", tokenName);
+            name = _concat("Hodl", tokenName);
 
         string memory tokenSymbol = token.symbol();
-        string memory symbol = _concat("h", tokenSymbol);
+            symbol = _concat("h", tokenSymbol);
+        }
         
-        bytes memory initializationCalldata = abi.encodeWithSelector(
+        bytes memory initializationCalldata =
+            abi.encodeWithSelector(
             IHodlERC20(_implementation).init.selector,
             _token,
             _penalty,
@@ -231,7 +260,8 @@ contract HodlFactory is HodlSpawner {
             _n,
             _feeRecipient,
             name,
-            symbol
+            symbol,
+            _bonusToken
         );
         return _computeAddress(_implementation, initializationCalldata);
     }
@@ -244,6 +274,7 @@ contract HodlFactory is HodlSpawner {
      * @param _expiry expiry timestamp
      * @param _fee fee out of every 1000 penalty 
      * @param _feeRecipient address that collect fees
+     * @param _bonusToken extra token for donations
      * @return id the unique id of an hToken
      */
     function _getHodlId(
@@ -253,11 +284,21 @@ contract HodlFactory is HodlSpawner {
         uint256 _expiry,
         uint256 _fee,
         uint256 _n,
-        address _feeRecipient
+        address _feeRecipient,
+        address _bonusToken
     ) internal pure returns (bytes32) {
         return
             keccak256(
-                abi.encodePacked(_token, _penalty, _lockWindow, _expiry, _fee, _n, _feeRecipient)
+                abi.encodePacked(
+                    _token,
+                    _penalty,
+                    _lockWindow,
+                    _expiry,
+                    _fee,
+                    _n,
+                    _feeRecipient,
+                    _bonusToken
+                )
             );
     }
 
@@ -265,4 +306,3 @@ contract HodlFactory is HodlSpawner {
       return string(abi.encodePacked(a, b));
     }
 }
-

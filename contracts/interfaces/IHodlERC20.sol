@@ -11,6 +11,7 @@ interface IHodlERC20 {
     uint256 _n,
     address _feeRecipient, 
     string memory _name, 
-    string memory _symbol
+    string memory _symbol,
+    address _bonusToken 
   ) external;
 }
