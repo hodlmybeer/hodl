@@ -29,3 +29,36 @@ A `fee` is charged from penalty when a user quit early. The creator of the HodlE
 
 All quitter's penalty go to a common pool, which anyone with the pool share can redeem their proportion anytime.
 When a user quit, he / she is also forced to redeemed some pool shares (proportional to the amount they're withdrawing). This is to prevent people from leaving the pool early but still earning rewards.
+
+## How to Run locally
+
+### install
+
+```
+npm i 
+```
+
+### test
+
+```bash
+# unit test
+npx hardhat test
+# coverage test
+npx hardhat coverage 
+```
+
+### Run slither analysis
+
+Slither is a static code analysis tool that help detect bad smart contract patterns.
+
+#### Install [Slither](https://github.com/crytic/slither)
+```
+pip3 install slither-analyzer
+```
+Or find more detail [here](https://github.com/crytic/slither#how-to-install) in their documentation.
+
+#### Run Analysis
+
+```
+slither .
+```
