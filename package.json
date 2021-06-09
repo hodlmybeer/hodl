@@ -2,7 +2,9 @@
   "name": "Hodl",
   "scripts": {
     "lint:contract": "npx hardhat format",
-    "lint:tests:fix": "eslint 'test/**/*.ts' -- --fix"
+    "lint:tests": "eslint 'test/**/*.ts'",
+    "lint:tests:fix": "eslint 'test/**/*.ts' -- --fix",
+    "lint": "npm run lint:contract && npm run lint:tests"
   },
   "devDependencies": {
     "@codechecks/client": "^0.1.10",

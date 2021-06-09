@@ -44,6 +44,9 @@ jobs:
           name: Install packages
           command: npm install
       - run:
+          name: Lint
+          command: npm run lint
+      - run:
           name: Compile Contracts
           command: npx hardhat compile
       - run:
