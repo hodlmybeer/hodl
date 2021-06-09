@@ -1,10 +1,10 @@
-import { ethers, waffle } from 'hardhat';
-import { expect } from 'chai';
-import { HodlERC20, MockERC20 } from '../typechain';
-import { BigNumber, utils } from 'ethers';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { ethers, waffle } from "hardhat";
+import { expect } from "chai";
+import { HodlERC20, MockERC20 } from "../typechain";
+import { BigNumber, utils } from "ethers";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-describe('HodlERC20 Tests Without Bonus Token', function () {
+describe("HodlERC20 Tests Without Bonus Token", function () {
   const provider = waffle.provider;
   const totalDuration = 86400 * 3; // 3 days period
   let expiry: BigNumber;
@@ -21,15 +21,15 @@ describe('HodlERC20 Tests Without Bonus Token', function () {
 
   const penalty = 50; // 5%
   const lockingWindow = 86400 * 1; // 1 day locking
-  const name = 'hodl WETH';
-  const symbol = 'hWETH';
+  const name = "hodl WETH";
+  const symbol = "hWETH";
   const fee = 50; //5% of penalty
   const n = 1; // linear decay
 
-  this.beforeAll('Set accounts', async () => {
+  this.beforeAll("Set accounts", async () => {
     const blockNumber = await provider.getBlockNumber();
     const currentBlock = await provider.getBlock(blockNumber);
-    expiry = BigNumber.from(parseInt((currentBlock.timestamp).toString()) + totalDuration);
+    expiry = BigNumber.from(parseInt(currentBlock.timestamp.toString()) + totalDuration);
 
     accounts = await ethers.getSigners();
     const [_depositor1, _depositor2, _depositor3, _feeRecipient] = accounts;
@@ -40,29 +40,21 @@ describe('HodlERC20 Tests Without Bonus Token', function () {
     feeRecipient = _feeRecipient;
   });
 
-  this.beforeAll('Deploy HodlERC20', async () => {
+  this.beforeAll("Deploy HodlERC20", async () => {
     accounts = await ethers.getSigners();
-    const HodlERC20 = await ethers.getContractFactory('HodlERC20');
+    const HodlERC20 = await ethers.getContractFactory("HodlERC20");
     const contract = await HodlERC20.deploy();
     hodl = contract as HodlERC20;
   });
 
-  this.beforeAll('Deploy Mock tokens', async () => {
-    const ERC20 = await ethers.getContractFactory('MockERC20');
+  this.beforeAll("Deploy Mock tokens", async () => {
+    const ERC20 = await ethers.getContractFactory("MockERC20");
     const erc20 = await ERC20.deploy();
     const bonusErc20 = await ERC20.deploy();
     token = erc20 as MockERC20;
     bonusToken = bonusErc20 as MockERC20;
-    await token.init('WETH', 'WETH', 18);
-    await bonusToken.init('BONUS', 'BONUS', 18);
-
-    // mint 100 WETH to account 0, 1 , 2, 3
-    // every depositor got 10 weth
-    const mintAmount = utils.parseUnits('10', 'ether');
-    await token.mint(depositor1.address, mintAmount);
-    await token.mint(depositor2.address, mintAmount);
-    await bonusToken.mint(depositor2.address, mintAmount);
-    await token.mint(depositor3.address, mintAmount);
+    await token.init("WETH", "WETH", 18);
+    await bonusToken.init("BONUS", "BONUS", 18);
 
     await hodl.init(
       token.address,
@@ -74,19 +66,18 @@ describe('HodlERC20 Tests Without Bonus Token', function () {
       feeRecipient.address,
       name,
       symbol,
-      ethers.constants.AddressZero,
+      ethers.constants.AddressZero
     );
   });
 
-  describe('pre-expiry', () => {
-    describe('#donations', () => {
-      it('Should fail if bonus token was not set up', async function () {
-        const amountToDonate = utils.parseUnits('0.5');
+  describe("pre-expiry", () => {
+    describe("#donations", () => {
+      it("Should fail if bonus token was not set up", async function () {
+        const amountToDonate = utils.parseUnits("0.5");
         await expect(hodl.connect(depositor2).donate(amountToDonate, bonusToken.address)).to.be.revertedWith(
-          'TOKEN_NOT_ALLOWED'
+          "TOKEN_NOT_ALLOWED"
         );
       });
-    })
+    });
   });
-
 });

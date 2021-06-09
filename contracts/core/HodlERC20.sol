@@ -13,7 +13,7 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
  * Any deposit will mint you a non-transferable hodlToken
  * which you can use to redeem your deposit. If ou redeem before expiry, you lose some amount to penalty.
  * The later you deposit, the less share you get. this is to reward early depositors and avoid last-second joining sharing the reward
- * 
+ *
  * You can withdraw anytime before expiry but you will get penalized. the penalty amount will go to the reward pool.
  */
 contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
@@ -37,13 +37,13 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   /// @notice duration in sec, during this period before expiry deposit will not be accepted.
   uint256 public lockWindow;
 
-    /// @notice total base token reward amount
+  /// @notice total base token reward amount
   uint256 public totalReward;
 
   /// @notice total shares available to redeem
   uint256 public totalShares;
 
-  /// @notice how fast shares you get decrease over time. 
+  /// @notice how fast shares you get decrease over time.
   ///         when n = 0 there's no decay. n = 1: linear decay, n = 2 exponential decay
   uint256 public n;
 
@@ -56,10 +56,10 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   /// @dev the address that collect fees from early quitter. ()
   address public feeRecipient;
 
-  /// @dev record each user's share to the pool. 
-  mapping(address => uint256) internal _shares; 
+  /// @dev record each user's share to the pool.
+  mapping(address => uint256) internal _shares;
 
-  /// @notice extra token for donations, if different from base token 
+  /// @notice extra token for donations, if different from base token
   IERC20WithDetail public bonusToken;
 
   /// @notice total bonus token reward amount
@@ -88,17 +88,17 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _bonusToken address of the bonus reward token (extra token for donations). Not required, set to zero address if using just the base token.
    */
   function init(
-    address _token, 
-    uint256 _penalty, 
-    uint256 _lockWindow, 
-    uint256 _expiry, 
+    address _token,
+    uint256 _penalty,
+    uint256 _lockWindow,
+    uint256 _expiry,
     uint256 _fee,
     uint256 _n,
-    address _feeRecipient, 
-    string memory _name, 
+    address _feeRecipient,
+    string memory _name,
     string memory _symbol,
     address _bonusToken
-    ) external override initializer {
+  ) external override initializer {
     require(_penalty < BASE, "INVALID_PENALTY");
     require(_fee < BASE, "INVALID_FEE");
     require(block.timestamp + _lockWindow < _expiry, "INVALID_EXPIRY");
@@ -129,8 +129,8 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   }
 
   /**
-  * @dev returns how much bonus token you get from burning {_share} amount of shares.
-  */
+   * @dev returns how much bonus token you get from burning {_share} amount of shares.
+   */
   function bonusFromShares(uint256 _share) external view returns (uint256) {
     return _rewardFromShares(_share, totalBonusReward);
   }
@@ -150,13 +150,13 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    */
   function deposit(uint256 _amount) external {
     require(block.timestamp + lockWindow < expiry, "LOCKED");
-    
+
     // mint hold token to the user
     _mint(msg.sender, _amount);
-    
+
     // calculate shares and mint to msg.sender
     uint256 sharesToMint = _calculateShares(_amount);
-    
+
     totalShares = totalShares.add(sharesToMint);
     _shares[msg.sender] = _shares[msg.sender].add(sharesToMint);
 
@@ -171,7 +171,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    */
   function quit(uint256 _amount) external {
     require(block.timestamp < expiry, "EXPIRED");
-        
+
     // force redeem if user has outstanding shares.
     // Need to perform before _quit, so a user won't get reward from his own exit.
     if (_shares[msg.sender] > 0) {
@@ -223,43 +223,49 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _amount amount to donate
    * @param _token token to donate (can be either a base token or a bonus token that was set up during the initialization)
    */
-    function donate(uint256 _amount, address _token) external {
-      require(address(_token) == address(token) || address(_token) == address(bonusToken), "TOKEN_NOT_ALLOWED");
+  function donate(uint256 _amount, address _token) external {
+    require(
+      address(_token) == address(token) || address(_token) == address(bonusToken),
+      "TOKEN_NOT_ALLOWED"
+    );
 
-      emit Donate(msg.sender, _amount, _token);
+    emit Donate(msg.sender, _amount, _token);
 
-      if (address(_token) == address(token)) {
-        totalReward = totalReward.add(_amount);
-        token.safeTransferFrom(msg.sender, address(this), _amount);
-      } else {
-        totalBonusReward = totalBonusReward.add(_amount);
-        bonusToken.safeTransferFrom(msg.sender, address(this), _amount);
-      }
+    if (address(_token) == address(token)) {
+      totalReward = totalReward.add(_amount);
+      token.safeTransferFrom(msg.sender, address(this), _amount);
+    } else {
+      totalBonusReward = totalBonusReward.add(_amount);
+      bonusToken.safeTransferFrom(msg.sender, address(this), _amount);
+    }
   }
 
   /**********************
    * private Functions *
    **********************/
 
-   /**
+  /**
    * @dev calculate reward from shares
    * @param _share number of shares
    * @param _tokenTotalReward total token amount for which to calculate a reward (either base or bonus token reward)
    */
-    function _rewardFromShares(uint256 _share, uint256 _tokenTotalReward) internal view returns (uint256) {
+  function _rewardFromShares(uint256 _share, uint256 _tokenTotalReward)
+    internal
+    view
+    returns (uint256)
+  {
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
 
-        if (_tokenTotalReward > 0) {
-            uint256 payout =
-                _tokenTotalReward
-                    .mul(cachedPrecisionFactor)
-                    .mul(_share)
-                    .div(totalShares)
-                    .div(cachedPrecisionFactor);
-            return payout;
-        } else {
-            return 0;
-        }
+    if (_tokenTotalReward > 0) {
+      uint256 payout = _tokenTotalReward
+      .mul(cachedPrecisionFactor)
+      .mul(_share)
+      .div(totalShares)
+      .div(cachedPrecisionFactor);
+      return payout;
+    } else {
+      return 0;
+    }
   }
 
   /**
@@ -270,8 +276,9 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
     // this will revert if user is trying to call exit with amount more than his holdings.
     _burn(msg.sender, _amount);
 
-    (uint256 payout, uint256 reward, uint256 fee) = _calculateExitPayout(_amount);(_amount);
-    
+    (uint256 payout, uint256 reward, uint256 fee) = _calculateExitPayout(_amount);
+    (_amount);
+
     // increase total in reward pool
     totalReward = totalReward.add(reward);
 
@@ -287,12 +294,12 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    */
   function _withdraw(uint256 _amount) private {
     require(block.timestamp >= expiry, "!EXPIRED");
-    
+
     _burn(msg.sender, _amount);
 
     emit Withdraw(msg.sender, _amount);
 
-    token.safeTransfer(msg.sender, _amount);  
+    token.safeTransfer(msg.sender, _amount);
   }
 
   /**
@@ -312,10 +319,8 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
 
     emit Redeem(msg.sender, _share, baseTokenPayout, bonusTokenPayout);
 
-    if (baseTokenPayout > 0)
-        token.safeTransfer(msg.sender, baseTokenPayout);
-    if (bonusTokenPayout > 0)
-        bonusToken.safeTransfer(msg.sender, bonusTokenPayout);
+    if (baseTokenPayout > 0) token.safeTransfer(msg.sender, baseTokenPayout);
+    if (bonusTokenPayout > 0) bonusToken.safeTransfer(msg.sender, bonusTokenPayout);
   }
 
   /**
@@ -323,26 +328,37 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _account account requesting
    * @param _amount amount of token quitting
    */
-    function _calculateSharesForceRedeem(address _account, uint256 _amount) internal view returns (uint256) {
-        uint256 totalCapital = balanceOf(_account);
-        uint256 accountShares = _shares[_account];
-        uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-        
-        return _amount
-        .mul(accountShares)
-        .mul(cachedPrecisionFactor)
-        .div(totalCapital)
-        .div(cachedPrecisionFactor);
+  function _calculateSharesForceRedeem(address _account, uint256 _amount)
+    internal
+    view
+    returns (uint256)
+  {
+    uint256 totalCapital = balanceOf(_account);
+    uint256 accountShares = _shares[_account];
+    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
+
+    return
+      _amount.mul(accountShares).mul(cachedPrecisionFactor).div(totalCapital).div(
+        cachedPrecisionFactor
+      );
   }
 
-   /**
+  /**
    * @dev calculate how much of _amount can be taken out by user / goes to reward pool / goes to feeRecipient
    * @param _amount total amount requested to withdraw before expiry.
    */
-   function _calculateExitPayout(uint256 _amount) internal view returns (uint256 payout, uint256 reward, uint256 fee) {
+  function _calculateExitPayout(uint256 _amount)
+    internal
+    view
+    returns (
+      uint256 payout,
+      uint256 reward,
+      uint256 fee
+    )
+  {
     uint256 cachedBase = BASE; // save SLOAD
     uint256 totalPenalty = _amount.mul(penaltyPortion).div(cachedBase);
-    
+
     fee = totalPenalty.mul(feePortion).div(cachedBase);
     reward = totalPenalty.sub(fee);
     payout = _amount.sub(totalPenalty);
@@ -352,7 +368,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @dev the share you get depositing _amount into the pool. Dependent on n.
    *      eg. when n = 1, the shares decrease linear as time goes by;
    *          when n = 2, the shares decrease exponentially.
-   * 
+   *
    *                        (timeLeft)^ n
    * share = amount * --------------------------
    *                      (total duration)^ n
@@ -360,16 +376,20 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   function _calculateShares(uint256 _amount) internal view returns (uint256) {
     uint256 timeLeft = expiry - block.timestamp;
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-    return _amount.mul(timeLeft**n)
-      .mul(cachedPrecisionFactor)
-      .div(totalTime**n)
-      .div(cachedPrecisionFactor);
+    return
+      _amount.mul(timeLeft**n).mul(cachedPrecisionFactor).div(totalTime**n).div(
+        cachedPrecisionFactor
+      );
   }
 
   /**
    * hook to prevent transferring the hodlToken
    */
-    function _beforeTokenTransfer(address from, address to, uint256) internal override {
+  function _beforeTokenTransfer(
+    address from,
+    address to,
+    uint256
+  ) internal override {
     require(from == address(0) || to == address(0), "!TRANSFER");
   }
 }
