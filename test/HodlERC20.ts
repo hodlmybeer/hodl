@@ -1,11 +1,11 @@
-import { ethers, waffle } from 'hardhat';
-import { expect } from 'chai';
-import { HodlERC20, MockERC20 } from '../typechain';
-import { BigNumber, utils } from 'ethers';
+import { ethers, waffle } from "hardhat";
+import { expect } from "chai";
+import { HodlERC20, MockERC20 } from "../typechain";
+import { BigNumber, utils } from "ethers";
 // import { calculateShares } from './utils';
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
-describe('HodlERC20 Tests', function () {
+describe("HodlERC20 Tests", function () {
   const provider = waffle.provider;
   const totalDuration = 86400 * 3; // 3 days period
   let expiry: BigNumber;
@@ -24,15 +24,15 @@ describe('HodlERC20 Tests', function () {
 
   const penalty = 50; // 5%
   const lockingWindow = 86400 * 1; // 1 day locking
-  const name = 'hodl WETH';
-  const symbol = 'hWETH';
+  const name = "hodl WETH";
+  const symbol = "hWETH";
   const fee = 50; //5% of penalty
   const n = 1; // linear decay
 
-  this.beforeAll('Set accounts', async () => {
+  this.beforeAll("Set accounts", async () => {
     const blockNumber = await provider.getBlockNumber();
     const currentBlock = await provider.getBlock(blockNumber);
-    expiry = BigNumber.from(parseInt((currentBlock.timestamp).toString()) + totalDuration);
+    expiry = BigNumber.from(parseInt(currentBlock.timestamp.toString()) + totalDuration);
 
     accounts = await ethers.getSigners();
     const [_depositor1, _depositor2, _depositor3, _depositor4, _feeRecipient, _donor] = accounts;
@@ -45,25 +45,25 @@ describe('HodlERC20 Tests', function () {
     donor = _donor;
   });
 
-  this.beforeAll('Deploy HodlERC20', async () => {
+  this.beforeAll("Deploy HodlERC20", async () => {
     accounts = await ethers.getSigners();
-    const HodlERC20 = await ethers.getContractFactory('HodlERC20');
+    const HodlERC20 = await ethers.getContractFactory("HodlERC20");
     const contract = await HodlERC20.deploy();
     hodl = contract as HodlERC20;
   });
 
-  this.beforeAll('Deploy Mock tokens', async () => {
-    const ERC20 = await ethers.getContractFactory('MockERC20');
+  this.beforeAll("Deploy Mock tokens", async () => {
+    const ERC20 = await ethers.getContractFactory("MockERC20");
     const erc20 = await ERC20.deploy();
     const bonusErc20 = await ERC20.deploy();
     token = erc20 as MockERC20;
     bonusToken = bonusErc20 as MockERC20;
-    await token.init('WETH', 'WETH', 18);
-    await bonusToken.init('BONUS', 'BONUS', 18);
+    await token.init("WETH", "WETH", 18);
+    await bonusToken.init("BONUS", "BONUS", 18);
 
     // mint 100 WETH to account 0, 1 , 2, 3
     // every depositor got 10 weth
-    const mintAmount = utils.parseUnits('10', 'ether');
+    const mintAmount = utils.parseUnits("10", "ether");
     await token.mint(depositor1.address, mintAmount);
     await token.mint(depositor2.address, mintAmount);
     await token.mint(depositor3.address, mintAmount);
@@ -71,9 +71,9 @@ describe('HodlERC20 Tests', function () {
     await bonusToken.mint(donor.address, mintAmount);
   });
 
-  describe('creation', () => {
-    describe('#init', () => {
-      it('Should revert when init with invalid penalty', async function () {
+  describe("creation", () => {
+    describe("#init", () => {
+      it("Should revert when init with invalid penalty", async function () {
         await expect(
           hodl.init(
             token.address,
@@ -85,11 +85,11 @@ describe('HodlERC20 Tests', function () {
             feeRecipient.address,
             name,
             symbol,
-            ethers.constants.AddressZero,
+            ethers.constants.AddressZero
           )
-        ).to.be.revertedWith('INVALID_PENALTY');
+        ).to.be.revertedWith("INVALID_PENALTY");
       });
-      it('Should revert when init with invalid fee', async function () {
+      it("Should revert when init with invalid fee", async function () {
         await expect(
           hodl.init(
             token.address,
@@ -101,12 +101,12 @@ describe('HodlERC20 Tests', function () {
             feeRecipient.address,
             name,
             symbol,
-            ethers.constants.AddressZero,
+            ethers.constants.AddressZero
           )
-        ).to.be.revertedWith('INVALID_FEE');
+        ).to.be.revertedWith("INVALID_FEE");
       });
 
-      it('Should revert when init with invalid expiry', async function () {
+      it("Should revert when init with invalid expiry", async function () {
         const wrongExpiry = expiry.sub(86400 * 30);
         await expect(
           hodl.init(
@@ -119,12 +119,12 @@ describe('HodlERC20 Tests', function () {
             feeRecipient.address,
             name,
             symbol,
-            ethers.constants.AddressZero,
+            ethers.constants.AddressZero
           )
-        ).to.be.revertedWith('INVALID_EXPIRY');
+        ).to.be.revertedWith("INVALID_EXPIRY");
       });
 
-      it('Should revert when init with locking window too long', async function () {
+      it("Should revert when init with locking window too long", async function () {
         const wrongLockingWindow = 86400 * 31;
         await expect(
           hodl.init(
@@ -137,12 +137,12 @@ describe('HodlERC20 Tests', function () {
             feeRecipient.address,
             name,
             symbol,
-            ethers.constants.AddressZero,
+            ethers.constants.AddressZero
           )
-        ).to.be.revertedWith('INVALID_EXPIRY');
+        ).to.be.revertedWith("INVALID_EXPIRY");
       });
 
-      it('Should init the contract', async function () {
+      it("Should init the contract", async function () {
         await hodl.init(
           token.address,
           penalty,
@@ -153,7 +153,7 @@ describe('HodlERC20 Tests', function () {
           feeRecipient.address,
           name,
           symbol,
-          bonusToken.address,
+          bonusToken.address
         );
 
         const reward = await hodl.totalReward();
@@ -175,29 +175,40 @@ describe('HodlERC20 Tests', function () {
         expect(_bonusReward.isZero()).to.be.true;
       });
 
-      it('Should revert when trying to re-init', async function () {
+      it("Should revert when trying to re-init", async function () {
         await expect(
-          hodl.init(token.address, 0, 0, 0, 0, 0, feeRecipient.address, name, symbol,ethers.constants.AddressZero)
-        ).to.be.revertedWith('Initializable: contract is already initialized');
+          hodl.init(
+            token.address,
+            0,
+            0,
+            0,
+            0,
+            0,
+            feeRecipient.address,
+            name,
+            symbol,
+            ethers.constants.AddressZero
+          )
+        ).to.be.revertedWith("Initializable: contract is already initialized");
       });
     });
   });
 
-  describe('pre-expiry', () => {
-    const depositAmount = utils.parseUnits('1');
-    describe('#transfer', () => {
-      it('Should revert when transfer is called', async function () {
+  describe("pre-expiry", () => {
+    const depositAmount = utils.parseUnits("1");
+    describe("#transfer", () => {
+      it("Should revert when transfer is called", async function () {
         await expect(
           hodl.connect(depositor1).transfer(depositor2.address, 10000)
-        ).to.be.revertedWith('!TRANSFER');
+        ).to.be.revertedWith("!TRANSFER");
       });
     });
-    describe('#deposit', () => {
-      it('Should deposit and get correct shares from depositor1 & depositor2', async function () {
+    describe("#deposit", () => {
+      it("Should deposit and get correct shares from depositor1 & depositor2", async function () {
         // deposit 1 WETH from depositor1
         await token.connect(depositor1).approve(hodl.address, ethers.constants.MaxUint256);
         await hodl.connect(depositor1).deposit(depositAmount);
-        
+
         const hWethBalance1 = await hodl.balanceOf(depositor1.address);
         expect(hWethBalance1).to.eq(depositAmount);
 
@@ -229,22 +240,22 @@ describe('HodlERC20 Tests', function () {
         expect(hWethBalance2).to.eq(hWethBalance4);
       });
     });
-    describe('#quit', () => {
-      it('Should be able to quit', async function () {
+    describe("#quit", () => {
+      it("Should be able to quit", async function () {
         const tokenBalanceBefore = await token.balanceOf(depositor1.address);
 
         const d1Balance = await hodl.balanceOf(depositor1.address);
-        const feeRecipientBalanceBefore = await token.balanceOf(feeRecipient.address)
+        const feeRecipientBalanceBefore = await token.balanceOf(feeRecipient.address);
 
         await hodl.connect(depositor1).quit(d1Balance);
 
         // share balance should be 0
         const d1BalanceAfter = await hodl.balanceOf(depositor1.address);
-        expect(d1BalanceAfter.eq(0), 'D1 balance after exit should be 0').to.be.true;
+        expect(d1BalanceAfter.eq(0), "D1 balance after exit should be 0").to.be.true;
 
         // shares should be zero because D1 was forced to redeem.
         const d1SharesAfter = await hodl.shares(depositor1.address);
-        expect(d1SharesAfter.eq(0), 'D1 shares after exit should be 0').to.be.true;
+        expect(d1SharesAfter.eq(0), "D1 shares after exit should be 0").to.be.true;
 
         // check depositor 1 got correct amount back
         const d1Penalty = depositAmount.mul(penalty).div(1000);
@@ -252,13 +263,13 @@ describe('HodlERC20 Tests', function () {
         const tokenBalanceAfter = await token.balanceOf(depositor1.address);
         expect(
           tokenBalanceAfter.sub(tokenBalanceBefore).eq(depositAmount.sub(d1Penalty)),
-          'penalty amount'
+          "penalty amount"
         ).to.be.true;
 
         // check total fee
         const feeCollected = d1Penalty.mul(fee).div(1000);
-        const feeRecipientBalanceAfter = await token.balanceOf(feeRecipient.address)
-        
+        const feeRecipientBalanceAfter = await token.balanceOf(feeRecipient.address);
+
         expect(feeRecipientBalanceAfter.sub(feeRecipientBalanceBefore).eq(feeCollected)).to.be.true;
 
         // check total fee
@@ -266,14 +277,14 @@ describe('HodlERC20 Tests', function () {
         const totalReward = await hodl.totalReward();
         expect(totalReward.eq(_totalRewards)).to.be.true;
       });
-      it('Should not be able to quit with amount exceeding the real amount', async function () {
+      it("Should not be able to quit with amount exceeding the real amount", async function () {
         const d1Balance = await hodl.balanceOf(depositor1.address);
         const exceedingBalance = d1Balance.add(1.0);
-        await expect(
-          hodl.connect(depositor1).quit(exceedingBalance)
-        ).to.be.revertedWith("ERC20: burn amount exceeds balance");
+        await expect(hodl.connect(depositor1).quit(exceedingBalance)).to.be.revertedWith(
+          "ERC20: burn amount exceeds balance"
+        );
       });
-      it('Should be able to quit when user have no shares', async function () {
+      it("Should be able to quit when user have no shares", async function () {
         const d3Shares = await hodl.shares(depositor3.address);
         await hodl.connect(depositor3).redeem(d3Shares);
 
@@ -284,7 +295,7 @@ describe('HodlERC20 Tests', function () {
 
         // share balance should be 0
         const d3BaseBalanceAfter = await hodl.balanceOf(depositor3.address);
-        expect(d3BaseBalanceAfter.eq(0), 'D3 balance after exit should be 0').to.be.true;
+        expect(d3BaseBalanceAfter.eq(0), "D3 balance after exit should be 0").to.be.true;
 
         // check depositor 1 got current amount back
         const d3Penalty = depositAmount.mul(penalty).div(1000);
@@ -292,17 +303,17 @@ describe('HodlERC20 Tests', function () {
         const tokenBalanceAfter = await token.balanceOf(depositor3.address);
         expect(
           tokenBalanceAfter.sub(tokenBalanceBefore).eq(depositAmount.sub(d3Penalty)),
-          'penalty amount'
+          "penalty amount"
         ).to.be.true;
       });
     });
-    describe('#withdraw', () => {
-      it('Should not be able to withdraw', async function () {
-        await expect(hodl.connect(depositor2).withdraw(10000)).to.be.revertedWith('!EXPIRED');
+    describe("#withdraw", () => {
+      it("Should not be able to withdraw", async function () {
+        await expect(hodl.connect(depositor2).withdraw(10000)).to.be.revertedWith("!EXPIRED");
       });
     });
-    describe('#redeem', () => {
-      it('Should be able to redeem', async function () {
+    describe("#redeem", () => {
+      it("Should be able to redeem", async function () {
         const balanceBefore = await token.balanceOf(depositor2.address);
         const d2Shares = await hodl.shares(depositor2.address);
         const totalRewards = await hodl.totalReward();
@@ -319,37 +330,38 @@ describe('HodlERC20 Tests', function () {
         expect(totalShares.sub(totalSharesAfter).eq(redeemShares)).to.be.true;
       });
     });
-    describe('#withdrawAllPostExpiry', () => {
-      it('Should not be able to call withdrawAllPostExpiry', async function () {
+    describe("#withdrawAllPostExpiry", () => {
+      it("Should not be able to call withdrawAllPostExpiry", async function () {
         await expect(hodl.connect(depositor2).withdrawAllPostExpiry()).to.be.revertedWith(
-          '!EXPIRED'
+          "!EXPIRED"
         );
       });
     });
-    describe('#donations', () => {
-      it('Should be able to donate any value of base token', async function () {
-        const beforeDonation = await hodl.totalReward()
+    describe("#donations", () => {
+      it("Should be able to donate any value of base token", async function () {
+        const beforeDonation = await hodl.totalReward();
         const bonusRewardBeforeDonation = await hodl.totalBonusReward();
-        const amountToDonate = utils.parseUnits('0.5');
-        await hodl.connect(depositor2).donate(amountToDonate, token.address)
-        const afterDonation = await hodl.totalReward()
+        const amountToDonate = utils.parseUnits("0.5");
+        await hodl.connect(depositor2).donate(amountToDonate, token.address);
+        const afterDonation = await hodl.totalReward();
         const bonusRewardAfterDonation = await hodl.totalBonusReward();
-        expect(afterDonation.sub(beforeDonation).eq(amountToDonate)).to.be.true
+        expect(afterDonation.sub(beforeDonation).eq(amountToDonate)).to.be.true;
         expect(bonusRewardBeforeDonation.isZero()).to.be.true;
         expect(bonusRewardAfterDonation.isZero()).to.be.true;
       });
-      it('Should be able to donate any value of bonus token', async function () {
-        const beforeDonation = await hodl.totalReward()
+      it("Should be able to donate any value of bonus token", async function () {
+        const beforeDonation = await hodl.totalReward();
         const bonusRewardBeforeDonation = await hodl.totalBonusReward();
-        const amountToDonate = utils.parseUnits('0.5');
+        const amountToDonate = utils.parseUnits("0.5");
         await bonusToken.connect(donor).approve(hodl.address, ethers.constants.MaxUint256);
-        await hodl.connect(donor).donate(amountToDonate, bonusToken.address)
-        const afterDonation = await hodl.totalReward()
+        await hodl.connect(donor).donate(amountToDonate, bonusToken.address);
+        const afterDonation = await hodl.totalReward();
         const bonusRewardAfterDonation = await hodl.totalBonusReward();
-        expect(bonusRewardAfterDonation.sub(bonusRewardBeforeDonation).eq(amountToDonate)).to.be.true
-        expect((beforeDonation).eq(afterDonation)).to.be.true;
+        expect(bonusRewardAfterDonation.sub(bonusRewardBeforeDonation).eq(amountToDonate)).to.be
+          .true;
+        expect(beforeDonation.eq(afterDonation)).to.be.true;
       });
-      it('Should be able to redeem bonus token', async function () {
+      it("Should be able to redeem bonus token", async function () {
         const bonusBalanceBefore = await bonusToken.balanceOf(depositor4.address);
         const d4Shares = await hodl.shares(depositor4.address);
         const totalBonusReward = await hodl.totalBonusReward();
@@ -363,64 +375,65 @@ describe('HodlERC20 Tests', function () {
         expect(bonusBalanceAfter.sub(bonusBalanceBefore).eq(amountToGet)).to.be.true;
         expect(bonusBalanceAfter.gt(0.0)).to.be.true;
       });
-    })
+    });
   });
 
-  describe('lock period', () => {
-    before('increase blocktime', async () => {
+  describe("lock period", () => {
+    before("increase blocktime", async () => {
       const time = expiry.toNumber() - lockingWindow + 1;
-      await provider.send('evm_setNextBlockTimestamp', [time]); // add totalDuration
-      await provider.send('evm_mine', []);
+      await provider.send("evm_setNextBlockTimestamp", [time]); // add totalDuration
+      await provider.send("evm_mine", []);
     });
 
-    it('should revert when trying to deposit', async function () {
-      const depositAmount = utils.parseUnits('1');
-      await expect(hodl.connect(depositor2).deposit(depositAmount)).to.be.revertedWith('LOCKED');
+    it("should revert when trying to deposit", async function () {
+      const depositAmount = utils.parseUnits("1");
+      await expect(hodl.connect(depositor2).deposit(depositAmount)).to.be.revertedWith("LOCKED");
     });
   });
 
-  describe('post expiry', () => {
-    before('set blocktime to expiry', async () => {
-      await provider.send('evm_setNextBlockTimestamp', [expiry.toNumber()]); // add totalDuration
-      await provider.send('evm_mine', []);
+  describe("post expiry", () => {
+    before("set blocktime to expiry", async () => {
+      await provider.send("evm_setNextBlockTimestamp", [expiry.toNumber()]); // add totalDuration
+      await provider.send("evm_mine", []);
     });
-    const depositAmount = utils.parseUnits('1');
-    describe('#deposit', () => {
-      it('Should not be able to deposit', async function () {
-        await expect(hodl.connect(depositor1).deposit(depositAmount)).to.be.revertedWith('LOCKED');
+    const depositAmount = utils.parseUnits("1");
+    describe("#deposit", () => {
+      it("Should not be able to deposit", async function () {
+        await expect(hodl.connect(depositor1).deposit(depositAmount)).to.be.revertedWith("LOCKED");
       });
     });
-    describe('#quit', () => {
-      it('Should reverts when trying to call quit', async function () {
-        await expect(hodl.connect(depositor1).quit(depositAmount)).to.be.revertedWith('EXPIRED');
+    describe("#quit", () => {
+      it("Should reverts when trying to call quit", async function () {
+        await expect(hodl.connect(depositor1).quit(depositAmount)).to.be.revertedWith("EXPIRED");
       });
     });
-    describe('#withdraw', () => {
-      it('Should be able to withdraw full amount', async function () {
-        const balance1Before = await hodl.balanceOf(depositor1.address)
+    describe("#withdraw", () => {
+      it("Should be able to withdraw full amount", async function () {
+        const balance1Before = await hodl.balanceOf(depositor1.address);
         await hodl.connect(depositor1).withdraw(balance1Before);
-        const balance1After = await hodl.balanceOf(depositor1.address)
-        expect(balance1After.isZero()).to.be.true
+        const balance1After = await hodl.balanceOf(depositor1.address);
+        expect(balance1After.isZero()).to.be.true;
         // console.log(`balance1Before`, balance1Before.toString())
       });
     });
-    describe('#redeem', () => {
-      it('Should be able to redeem', async function () {});
+    describe("#redeem", () => {
+      it("Should be able to redeem", async function () {});
     });
-    describe('#withdrawAllPostExpiry', () => {
-      it('Should withdraw everything', async function () {
-        const tokenBalanceBefore = await token.balanceOf(depositor2.address)
-        const rewardBalanceBefore = await bonusToken.balanceOf(depositor2.address)
-        const shares = await hodl.shares(depositor2.address)
-        
-        const expectedReward = await hodl.rewardFromShares(shares)
-        const expectedBonus = await hodl.bonusFromShares(shares)
-        const balance = await hodl.balanceOf(depositor2.address)
-        await hodl.connect(depositor2).withdrawAllPostExpiry()
-        const tokenBalanceAfter = await token.balanceOf(depositor2.address)
-        const rewardBalanceAfter = await bonusToken.balanceOf(depositor2.address)
-        expect(tokenBalanceAfter.sub(tokenBalanceBefore).eq(expectedReward.add(balance))).to.be.true
-        expect(rewardBalanceAfter.sub(rewardBalanceBefore).eq(expectedBonus)).to.be.true
+    describe("#withdrawAllPostExpiry", () => {
+      it("Should withdraw everything", async function () {
+        const tokenBalanceBefore = await token.balanceOf(depositor2.address);
+        const rewardBalanceBefore = await bonusToken.balanceOf(depositor2.address);
+        const shares = await hodl.shares(depositor2.address);
+
+        const expectedReward = await hodl.rewardFromShares(shares);
+        const expectedBonus = await hodl.bonusFromShares(shares);
+        const balance = await hodl.balanceOf(depositor2.address);
+        await hodl.connect(depositor2).withdrawAllPostExpiry();
+        const tokenBalanceAfter = await token.balanceOf(depositor2.address);
+        const rewardBalanceAfter = await bonusToken.balanceOf(depositor2.address);
+        expect(tokenBalanceAfter.sub(tokenBalanceBefore).eq(expectedReward.add(balance))).to.be
+          .true;
+        expect(rewardBalanceAfter.sub(rewardBalanceBefore).eq(expectedBonus)).to.be.true;
       });
     });
   });

@@ -4,6 +4,7 @@ import '@typechain/hardhat';
 import 'solidity-coverage';
 import 'hardhat-contract-sizer';
 import "hardhat-gas-reporter"
+import "hardhat-prettier";
 
 import * as fs from 'fs';
 import * as dotenv from 'dotenv'
