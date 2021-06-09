@@ -34,7 +34,7 @@ When a user quit, he / she is also forced to redeemed some pool shares (proporti
 
 ### install
 
-```
+```bash
 npm i 
 ```
 
@@ -45,6 +45,12 @@ npm i
 npx hardhat test
 # coverage test
 npx hardhat coverage 
+```
+
+### Lint
+
+```bash
+npx hardhat format
 ```
 
 ### Run slither analysis
