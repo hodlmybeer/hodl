@@ -413,7 +413,6 @@ describe("HodlERC20 Tests", function () {
         await hodl.connect(depositor1).withdraw(balance1Before);
         const balance1After = await hodl.balanceOf(depositor1.address);
         expect(balance1After.isZero()).to.be.true;
-        // console.log(`balance1Before`, balance1Before.toString())
       });
     });
     describe("#redeem", () => {
