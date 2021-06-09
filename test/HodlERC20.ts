@@ -379,7 +379,7 @@ describe("HodlERC20 Tests", function () {
   });
 
   describe("lock period", () => {
-    before("increase blocktime", async () => {
+    before("increase block time", async () => {
       const time = expiry.toNumber() - lockingWindow + 1;
       await provider.send("evm_setNextBlockTimestamp", [time]); // add totalDuration
       await provider.send("evm_mine", []);
@@ -392,7 +392,7 @@ describe("HodlERC20 Tests", function () {
   });
 
   describe("post expiry", () => {
-    before("set blocktime to expiry", async () => {
+    before("set block time to expiry", async () => {
       await provider.send("evm_setNextBlockTimestamp", [expiry.toNumber()]); // add totalDuration
       await provider.send("evm_mine", []);
     });
