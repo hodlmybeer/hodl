@@ -151,8 +151,6 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   function deposit(uint256 _amount) external {
     require(block.timestamp + lockWindow < expiry, "LOCKED");
     
-    token.safeTransferFrom(msg.sender, address(this), _amount);
-    
     // mint hold token to the user
     _mint(msg.sender, _amount);
     
@@ -163,6 +161,8 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
     _shares[msg.sender] = _shares[msg.sender].add(sharesToMint);
 
     emit Deposit(msg.sender, _amount, sharesToMint);
+
+    token.safeTransferFrom(msg.sender, address(this), _amount);
   }
 
   /**
@@ -170,7 +170,16 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _amount amount of token to exist
    */
   function quit(uint256 _amount) external {
-    _quit(_amount);
+    require(block.timestamp < expiry, "EXPIRED");
+        
+    // force redeem if user has outstanding shares.
+    // Need to perform before _quit, so a user won't get reward from his own exit.
+    if (_shares[msg.sender] > 0) {
+      uint256 sharesToRedeem = _calculateSharesForceRedeem(msg.sender, _amount);
+      _redeem(sharesToRedeem);
+    }
+
+    _penalizeAndExit(_amount);
   }
 
   /**
@@ -215,16 +224,17 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _token token to donate (can be either a base token or a bonus token that was set up during the initialization)
    */
     function donate(uint256 _amount, address _token) external {
-        require(address(_token) == address(token) || address(_token) == address(bonusToken), "TOKEN_NOT_ALLOWED");
-        if (address(_token) == address(token)) {
-            token.safeTransferFrom(msg.sender, address(this), _amount);
-            totalReward = totalReward.add(_amount);
-        } else {
-            bonusToken.safeTransferFrom(msg.sender, address(this), _amount);
-            totalBonusReward = totalBonusReward.add(_amount);
-        }
+      require(address(_token) == address(token) || address(_token) == address(bonusToken), "TOKEN_NOT_ALLOWED");
 
-        emit Donate(msg.sender, _amount, _token);
+      emit Donate(msg.sender, _amount, _token);
+
+      if (address(_token) == address(token)) {
+        totalReward = totalReward.add(_amount);
+        token.safeTransferFrom(msg.sender, address(this), _amount);
+      } else {
+        totalBonusReward = totalBonusReward.add(_amount);
+        bonusToken.safeTransferFrom(msg.sender, address(this), _amount);
+      }
   }
 
   /**********************
@@ -250,26 +260,6 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
         } else {
             return 0;
         }
-  }
-
-  /**
-   * @dev quit the pool before expiry. 
-   * calling this function will automatically redeem some of user's outstanding shares, 
-   * proportional to the amount they're withdrawing early.
-   * This is to prevent a user leaving a pool and keep earning rewards
-   * @param _amount amount to withdraw before penalty
-   */
-  function _quit(uint256 _amount) private {
-    require(block.timestamp < expiry, "EXPIRED");
-        
-    // force redeem if user has outstanding shares.
-    // Need to perform before _quit, so a user won't get reward from his own exit.
-    if (_shares[msg.sender] > 0) {
-      uint256 sharesToRedeem = _calculateSharesForceRedeem(msg.sender, _amount);
-      _redeem(sharesToRedeem);
-    }
-
-    _penalizeAndExit(_amount);
   }
 
   /**
