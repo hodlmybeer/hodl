@@ -74,9 +74,9 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
     describe("#donations", () => {
       it("Should fail if bonus token was not set up", async function () {
         const amountToDonate = utils.parseUnits("0.5");
-        await expect(
-          hodl.connect(depositor2).donate(amountToDonate, bonusToken.address)
-        ).to.be.revertedWith("TOKEN_NOT_ALLOWED");
+        await expect(hodl.connect(depositor2).donate(amountToDonate, bonusToken.address)).to.be.revertedWith(
+          "TOKEN_NOT_ALLOWED"
+        );
       });
     });
   });

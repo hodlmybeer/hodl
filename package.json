@@ -2,8 +2,8 @@
   "name": "Hodl",
   "scripts": {
     "lint:contract": "npx hardhat format",
-    "lint:tests": "./node_modules/.bin/eslint 'test/**/*.ts'",
-    "lint:tests:fix": "./node_modules/.bin/eslint 'test/**/*.ts' -- --fix",
+    "lint:tests": "prettier --check 'test/**/*.ts'",
+    "lint:tests:fix": "prettier --write 'test/**/*.ts'",
     "lint": "npm run lint:contract && npm run lint:tests"
   },
   "devDependencies": {
