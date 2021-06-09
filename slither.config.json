@@ -1,0 +1,8 @@
+{
+  "detectors_to_exclude": "timestamp,solc-version,constable-states,calls-loop",
+  "filter_paths": "packages|mocks|tests|interfaces",
+  "exclude_optimization": false,
+  "exclude_informational": false,
+  "exclude_low": false,
+  "solc": "solc"
+}
