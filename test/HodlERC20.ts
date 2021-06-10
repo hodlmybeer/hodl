@@ -142,6 +142,24 @@ describe("HodlERC20 Tests", function () {
         ).to.be.revertedWith("INVALID_EXPIRY");
       });
 
+      it("Should revert if bonus token is the same as main token", async function () {
+        const wrongLockingWindow = 86400 * 31;
+        await expect(
+          hodl.init(
+            token.address,
+            penalty,
+            lockingWindow,
+            expiry,
+            fee,
+            n,
+            feeRecipient.address,
+            name,
+            symbol,
+            token.address
+          )
+        ).to.be.revertedWith("INVALID_BONUS_TOKEN");
+      });
+
       it("Should init the contract", async function () {
         await hodl.init(
           token.address,

@@ -102,6 +102,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
     require(_penalty < BASE, "INVALID_PENALTY");
     require(_fee < BASE, "INVALID_FEE");
     require(block.timestamp + _lockWindow < _expiry, "INVALID_EXPIRY");
+    require(address(_token) != address(_bonusToken), "INVALID_BONUS_TOKEN");
 
     totalTime = _expiry - block.timestamp;
 
@@ -224,10 +225,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _token token to donate (can be either a base token or a bonus token that was set up during the initialization)
    */
   function donate(uint256 _amount, address _token) external {
-    require(
-      address(_token) == address(token) || address(_token) == address(bonusToken),
-      "TOKEN_NOT_ALLOWED"
-    );
+    require(address(_token) == address(token) || address(_token) == address(bonusToken), "TOKEN_NOT_ALLOWED");
 
     emit Donate(msg.sender, _amount, _token);
 
@@ -249,19 +247,13 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _share number of shares
    * @param _tokenTotalReward total token amount for which to calculate a reward (either base or bonus token reward)
    */
-  function _rewardFromShares(uint256 _share, uint256 _tokenTotalReward)
-    internal
-    view
-    returns (uint256)
-  {
+  function _rewardFromShares(uint256 _share, uint256 _tokenTotalReward) internal view returns (uint256) {
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
 
     if (_tokenTotalReward > 0) {
-      uint256 payout = _tokenTotalReward
-      .mul(cachedPrecisionFactor)
-      .mul(_share)
-      .div(totalShares)
-      .div(cachedPrecisionFactor);
+      uint256 payout = _tokenTotalReward.mul(cachedPrecisionFactor).mul(_share).div(totalShares).div(
+        cachedPrecisionFactor
+      );
       return payout;
     } else {
       return 0;
@@ -328,19 +320,12 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _account account requesting
    * @param _amount amount of token quitting
    */
-  function _calculateSharesForceRedeem(address _account, uint256 _amount)
-    internal
-    view
-    returns (uint256)
-  {
+  function _calculateSharesForceRedeem(address _account, uint256 _amount) internal view returns (uint256) {
     uint256 totalCapital = balanceOf(_account);
     uint256 accountShares = _shares[_account];
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
 
-    return
-      _amount.mul(accountShares).mul(cachedPrecisionFactor).div(totalCapital).div(
-        cachedPrecisionFactor
-      );
+    return _amount.mul(accountShares).mul(cachedPrecisionFactor).div(totalCapital).div(cachedPrecisionFactor);
   }
 
   /**
@@ -376,10 +361,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   function _calculateShares(uint256 _amount) internal view returns (uint256) {
     uint256 timeLeft = expiry - block.timestamp;
     uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-    return
-      _amount.mul(timeLeft**n).mul(cachedPrecisionFactor).div(totalTime**n).div(
-        cachedPrecisionFactor
-      );
+    return _amount.mul(timeLeft**n).mul(cachedPrecisionFactor).div(totalTime**n).div(cachedPrecisionFactor);
   }
 
   /**
