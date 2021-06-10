@@ -143,7 +143,6 @@ describe("HodlERC20 Tests", function () {
       });
 
       it("Should revert if bonus token is the same as main token", async function () {
-        const wrongLockingWindow = 86400 * 31;
         await expect(
           hodl.init(
             token.address,
