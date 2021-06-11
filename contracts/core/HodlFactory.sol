@@ -24,10 +24,7 @@ contract HodlSpawner {
    * from the spawned contract to the logic contract during contract creation
    * @return spawnedContract the address of the newly-spawned contract
    */
-  function _spawn(address logicContract, bytes memory initializationCalldata)
-    internal
-    returns (address)
-  {
+  function _spawn(address logicContract, bytes memory initializationCalldata) internal returns (address) {
     // place the creation code and constructor args of the contract to spawn in memory
     bytes memory initCode = abi.encodePacked(
       type(Spawn).creationCode,
@@ -120,16 +117,7 @@ contract HodlFactory is HodlSpawner {
     address _feeRecipient,
     address _bonusToken
   ) external returns (address newHodl) {
-    bytes32 id = _getHodlId(
-      _token,
-      _penalty,
-      _lockWindow,
-      _expiry,
-      _fee,
-      _n,
-      _feeRecipient,
-      _bonusToken
-    );
+    bytes32 id = _getHodlId(_token, _penalty, _lockWindow, _expiry, _fee, _n, _feeRecipient, _bonusToken);
     require(_idToAddress[id] == address(0), "CREATED");
     string memory name;
     string memory symbol;
@@ -163,18 +151,7 @@ contract HodlFactory is HodlSpawner {
     _isValidHToken[newHodl] = true;
     _idToAddress[id] = newHodl;
 
-    emit HodlCreated(
-      newHodl,
-      _token,
-      _penalty,
-      _lockWindow,
-      _expiry,
-      _fee,
-      _n,
-      _feeRecipient,
-      msg.sender,
-      _bonusToken
-    );
+    emit HodlCreated(newHodl, _token, _penalty, _lockWindow, _expiry, _fee, _n, _feeRecipient, msg.sender, _bonusToken);
 
     return newHodl;
   }
@@ -200,16 +177,7 @@ contract HodlFactory is HodlSpawner {
     address _feeRecipient,
     address _bonusToken
   ) external view returns (address) {
-    bytes32 id = _getHodlId(
-      _token,
-      _penalty,
-      _lockWindow,
-      _expiry,
-      _fee,
-      _n,
-      _feeRecipient,
-      _bonusToken
-    );
+    bytes32 id = _getHodlId(_token, _penalty, _lockWindow, _expiry, _fee, _n, _feeRecipient, _bonusToken);
     return _idToAddress[id];
   }
 
@@ -286,19 +254,7 @@ contract HodlFactory is HodlSpawner {
     address _feeRecipient,
     address _bonusToken
   ) internal pure returns (bytes32) {
-    return
-      keccak256(
-        abi.encodePacked(
-          _token,
-          _penalty,
-          _lockWindow,
-          _expiry,
-          _fee,
-          _n,
-          _feeRecipient,
-          _bonusToken
-        )
-      );
+    return keccak256(abi.encodePacked(_token, _penalty, _lockWindow, _expiry, _fee, _n, _feeRecipient, _bonusToken));
   }
 
   function _concat(string memory a, string memory b) internal pure returns (string memory) {
