@@ -18,7 +18,11 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   using SafeERC20 for IERC20WithDetail;
   using SafeMath for uint256;
 
+  /// @notice token to hodl
   IERC20WithDetail public token;
+
+  /// @notice extra bonus token can be donated into the pool as reward to hodlers
+  IERC20WithDetail public bonusToken;
 
   /// @notice penalty (3 decimals) for withdrawing before expiry. penalty of 20 == 2%
   uint256 public penaltyPortion;
@@ -41,15 +45,12 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /// @notice total shares available to redeem
   uint256 public totalShares;
 
+  /// @notice total bonus token reward amount
+  uint256 public totalBonusReward;
+
   /// @notice how fast shares you get decrease over time.
   ///         when n = 0 there's no decay. n = 1: linear decay, n = 2 exponential decay
   uint256 public n;
-
-  /// @dev scaling factor for penalty and fee
-  uint256 internal constant BASE = 1000;
-
-  /// @dev scaling factor for share calculation.
-  uint256 internal constant PRECISION_FACTOR = 1e18;
 
   /// @dev the address that collect fees from early quitter. ()
   address public feeRecipient;
@@ -57,11 +58,8 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /// @dev record each user's share to the pool.
   mapping(address => uint256) internal _shares;
 
-  /// @notice extra token for donations, if different from base token
-  IERC20WithDetail public bonusToken;
-
-  /// @notice total bonus token reward amount
-  uint256 public totalBonusReward;
+  /// @dev scaling factor for penalty and fee
+  uint256 internal constant BASE = 1000;
 
   /**********************
    *       Events       *
@@ -246,12 +244,8 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    * @param _tokenTotalReward total token amount for which to calculate a reward (either base or bonus token reward)
    */
   function _rewardFromShares(uint256 _share, uint256 _tokenTotalReward) internal view returns (uint256) {
-    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-
     if (_tokenTotalReward > 0) {
-      uint256 payout = _tokenTotalReward.mul(cachedPrecisionFactor).mul(_share).div(totalShares).div(
-        cachedPrecisionFactor
-      );
+      uint256 payout = _tokenTotalReward.mul(_share).div(totalShares);
       return payout;
     } else {
       return 0;
@@ -321,9 +315,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   function _calculateSharesForceRedeem(address _account, uint256 _amount) internal view returns (uint256) {
     uint256 totalCapital = balanceOf(_account);
     uint256 accountShares = _shares[_account];
-    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-
-    return _amount.mul(accountShares).mul(cachedPrecisionFactor).div(totalCapital).div(cachedPrecisionFactor);
+    return _amount.mul(accountShares).div(totalCapital);
   }
 
   /**
@@ -358,8 +350,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    */
   function _calculateShares(uint256 _amount) internal view returns (uint256) {
     uint256 timeLeft = expiry - block.timestamp;
-    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-    return _amount.mul(timeLeft**n).mul(cachedPrecisionFactor).div(totalTime**n).div(cachedPrecisionFactor);
+    return _amount.mul(timeLeft**n).div(totalTime**n);
   }
 
   /**
