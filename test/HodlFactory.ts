@@ -40,6 +40,11 @@ describe("Hodl Factory Tests", function () {
     factory = await Factory.deploy(implementation.address);
   });
 
+  it("should revert if deploy with invalid impl address", async () => {
+    const Factory = await ethers.getContractFactory("HodlFactory");
+    await expect(Factory.deploy(ethers.constants.AddressZero)).to.be.revertedWith("INVALID_IMPL");
+  });
+
   it("deploy a new clone", async () => {
     const targetAddress = await factory.getTargetHTokenAddress(
       token.address,

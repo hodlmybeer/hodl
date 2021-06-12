@@ -3,8 +3,6 @@ pragma solidity ^0.7.0;
 
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/drafts/ERC20PermitUpgradeable.sol";
 import {IERC20WithDetail} from "../interfaces/IERC20WithDetail.sol";
-import {IHodlERC20} from "../interfaces/IHodlERC20.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/Initializable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
 
@@ -16,11 +14,15 @@ import {SafeMath} from "@openzeppelin/contracts/math/SafeMath.sol";
  *
  * You can withdraw anytime before expiry but you will get penalized. the penalty amount will go to the reward pool.
  */
-contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
+contract HodlERC20 is ERC20PermitUpgradeable {
   using SafeERC20 for IERC20WithDetail;
   using SafeMath for uint256;
 
+  /// @notice token to hodl
   IERC20WithDetail public token;
+
+  /// @notice extra bonus token can be donated into the pool as reward to hodlers
+  IERC20WithDetail public bonusToken;
 
   /// @notice penalty (3 decimals) for withdrawing before expiry. penalty of 20 == 2%
   uint256 public penaltyPortion;
@@ -43,15 +45,12 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   /// @notice total shares available to redeem
   uint256 public totalShares;
 
+  /// @notice total bonus token reward amount
+  uint256 public totalBonusReward;
+
   /// @notice how fast shares you get decrease over time.
   ///         when n = 0 there's no decay. n = 1: linear decay, n = 2 exponential decay
   uint256 public n;
-
-  /// @dev scaling factor for penalty and fee
-  uint256 internal constant BASE = 1000;
-
-  /// @dev scaling factor for share calculation.
-  uint256 internal constant PRECISION_FACTOR = 1e18;
 
   /// @dev the address that collect fees from early quitter. ()
   address public feeRecipient;
@@ -59,11 +58,8 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   /// @dev record each user's share to the pool.
   mapping(address => uint256) internal _shares;
 
-  /// @notice extra token for donations, if different from base token
-  IERC20WithDetail public bonusToken;
-
-  /// @notice total bonus token reward amount
-  uint256 public totalBonusReward;
+  /// @dev scaling factor for penalty and fee
+  uint256 internal constant BASE = 1000;
 
   /**********************
    *       Events       *
@@ -98,11 +94,12 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
     string memory _name,
     string memory _symbol,
     address _bonusToken
-  ) external override initializer {
+  ) external initializer {
     require(_penalty < BASE, "INVALID_PENALTY");
     require(_fee < BASE, "INVALID_FEE");
     require(block.timestamp + _lockWindow < _expiry, "INVALID_EXPIRY");
     require(address(_token) != address(_bonusToken), "INVALID_BONUS_TOKEN");
+    require(_feeRecipient != address(0), "INVALID_RECIPIENT");
 
     totalTime = _expiry - block.timestamp;
 
@@ -248,12 +245,8 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    * @param _tokenTotalReward total token amount for which to calculate a reward (either base or bonus token reward)
    */
   function _rewardFromShares(uint256 _share, uint256 _tokenTotalReward) internal view returns (uint256) {
-    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-
     if (_tokenTotalReward > 0) {
-      uint256 payout = _tokenTotalReward.mul(cachedPrecisionFactor).mul(_share).div(totalShares).div(
-        cachedPrecisionFactor
-      );
+      uint256 payout = _tokenTotalReward.mul(_share).div(totalShares);
       return payout;
     } else {
       return 0;
@@ -316,16 +309,14 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
   }
 
   /**
-   * calculate amount of shares the user is forced to redeem when quitting early
+   * @dev calculate amount of shares the user is forced to redeem when quitting early.
    * @param _account account requesting
    * @param _amount amount of token quitting
    */
   function _calculateSharesForceRedeem(address _account, uint256 _amount) internal view returns (uint256) {
     uint256 totalCapital = balanceOf(_account);
     uint256 accountShares = _shares[_account];
-    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-
-    return _amount.mul(accountShares).mul(cachedPrecisionFactor).div(totalCapital).div(cachedPrecisionFactor);
+    return _amount.mul(accountShares).div(totalCapital);
   }
 
   /**
@@ -360,8 +351,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
    */
   function _calculateShares(uint256 _amount) internal view returns (uint256) {
     uint256 timeLeft = expiry - block.timestamp;
-    uint256 cachedPrecisionFactor = PRECISION_FACTOR;
-    return _amount.mul(timeLeft**n).mul(cachedPrecisionFactor).div(totalTime**n).div(cachedPrecisionFactor);
+    return _amount.mul(timeLeft**n).div(totalTime**n);
   }
 
   /**
@@ -371,7 +361,7 @@ contract HodlERC20 is ERC20PermitUpgradeable, IHodlERC20 {
     address from,
     address to,
     uint256
-  ) internal override {
+  ) internal pure override {
     require(from == address(0) || to == address(0), "!TRANSFER");
   }
 }

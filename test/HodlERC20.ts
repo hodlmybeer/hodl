@@ -159,6 +159,23 @@ describe("HodlERC20 Tests", function () {
         ).to.be.revertedWith("INVALID_BONUS_TOKEN");
       });
 
+      it("Should revert if fee recipient is address(0)", async function () {
+        await expect(
+          hodl.init(
+            token.address,
+            penalty,
+            lockingWindow,
+            expiry,
+            fee,
+            n,
+            ethers.constants.AddressZero,
+            name,
+            symbol,
+            ethers.constants.AddressZero
+          )
+        ).to.be.revertedWith("INVALID_RECIPIENT");
+      });
+
       it("Should init the contract", async function () {
         await hodl.init(
           token.address,

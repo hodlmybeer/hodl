@@ -9,7 +9,7 @@ pragma solidity ^0.7.0;
  * SPDX-License-Identifier: MIT
  */
 contract Spawn {
-  constructor(address logicContract, bytes memory initializationCalldata) public payable {
+  constructor(address logicContract, bytes memory initializationCalldata) payable {
     // delegatecall into the logic contract to perform initialization.
     (bool ok, ) = logicContract.delegatecall(initializationCalldata);
     if (!ok) {
