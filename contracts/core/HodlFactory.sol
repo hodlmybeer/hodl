@@ -78,6 +78,7 @@ contract HodlFactory is HodlSpawner {
   address implementation;
 
   constructor(address _implementation) {
+    require(_implementation != address(0), "INVALID_IMPL");
     implementation = _implementation;
   }
 
