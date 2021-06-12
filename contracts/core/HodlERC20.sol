@@ -99,6 +99,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     require(_fee < BASE, "INVALID_FEE");
     require(block.timestamp + _lockWindow < _expiry, "INVALID_EXPIRY");
     require(address(_token) != address(_bonusToken), "INVALID_BONUS_TOKEN");
+    require(_feeRecipient != address(0), "INVALID_RECIPIENT");
 
     totalTime = _expiry - block.timestamp;
 
