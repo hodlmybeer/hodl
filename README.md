@@ -6,7 +6,31 @@
 
 HODLing has been the best strategy in crypto. **Hodl** is here to help you do that with some extra incentive!
 
-## Intro
+## What is Hodl
+
+Hodl is the protocol designed let anyone create "hodling competition" on any ERC20 tokens. Users can always choose to quit early with a pentality charged. If the participant successsful hodl the token until expiry, he can withdraw full amount he despoited without anying fee, and with some extra tokens collected from quitters, or other "bonus token" that can be donated to the pool.
+
+The spirit is, if you plan to hodl a token anyway, there's nothing you can loose to particiapte in such a "game". We want to encourage people to simply hodl tokens and focus more on the long term achievement of a project.
+
+### Use cases
+
+#### Community Treasury
+A team with token which wishes to stablize the token price, can provides some extra incentive to incentivize people to hodl their token and not sell for a longer period of time. This can also be customized as a "Lock" contract, where quitters loose 100% of their deposits. We believe that these use cases are useful for projects to incentivize long term hodlers.
+
+#### Vesting contract
+Projects can mint a "hToken" (hodl token) to a user or community member by locking up the token. The user who recieved hTokens cannot trade them, but will be able to decide if he wants to withdraw now and being penalized, or wait for maybe a year to recieved the full amount. This is somehow similar to the idea of vesting, but with more customizable ideas.
+
+#### Long term staker reward
+Most protocols with tokens provide staking mechinism for token holders to stake and earn some extra money, but it's also common that people will leave the pool once the liqudity mining program is over. With Hodl, projects can incentivize long term stakers by launching a Hodl contract on "stake shares" tokens, and make sure only people who hold til the end get rewarded.
+
+#### Bootstrap Liquidity by incentivizing long term LP
+This is very similar to the previous use case, but especially featuring the `bonusToken` feature in Hodl. It's probably not the best to incentivie LP token holders with more LP tokens, cause the risk market makers are taking is huge and it's hard to be offset by offering more LP shares. This is when the `bonusToken` is helpful, where pool creators can use another token to reward the "LP token hodlers". This also solve the problems of needing an on-going liquidity mining programs to keep people in the game.
+
+#### Other Innovations
+You can always wrap our hToken into some tradable ERC20 tokens by using another wrapping contract, and add more interesting logic to build fun projects, e.g. make it only transferable before certain date.
+
+
+## What is in this repository
 
 This is the contract repo for **Hodl**, which enables anyone to create hodling pools. There are 2 contracts in the core folder:
 
@@ -30,7 +54,7 @@ A `fee` is charged from penalty when a user quit early. The creator of the HodlE
 All quitter's penalty go to a common pool, which anyone with the pool share can redeem their proportion anytime.
 When a user quit, he / she is also forced to redeemed some pool shares (proportional to the amount they're withdrawing). This is to prevent people from leaving the pool early but still earning rewards.
 
-## How to Run locally
+## Run this repo locally
 
 ### install
 
