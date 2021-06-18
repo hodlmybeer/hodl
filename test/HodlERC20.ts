@@ -228,7 +228,7 @@ describe("HodlERC20 Tests", function () {
       it("Should deposit and get correct shares from depositor1 & depositor2", async function () {
         // deposit 1 WETH from depositor1
         await token.connect(depositor1).approve(hodl.address, ethers.constants.MaxUint256);
-        await hodl.connect(depositor1).deposit(depositAmount);
+        await hodl.connect(depositor1).deposit(depositAmount, depositor1.address);
 
         const hWethBalance1 = await hodl.balanceOf(depositor1.address);
         expect(hWethBalance1).to.eq(depositAmount);
@@ -240,7 +240,7 @@ describe("HodlERC20 Tests", function () {
 
         // deposit 1 WETH from depositor2
         await token.connect(depositor2).approve(hodl.address, ethers.constants.MaxUint256);
-        await hodl.connect(depositor2).deposit(depositAmount);
+        await hodl.connect(depositor2).deposit(depositAmount, depositor2.address);
 
         const hWethBalance2 = await hodl.balanceOf(depositor2.address);
         expect(hWethBalance2).to.eq(depositAmount);
@@ -250,13 +250,13 @@ describe("HodlERC20 Tests", function () {
 
         // deposit 1 WETH from depositor3
         await token.connect(depositor3).approve(hodl.address, ethers.constants.MaxUint256);
-        await hodl.connect(depositor3).deposit(depositAmount);
+        await hodl.connect(depositor3).deposit(depositAmount, depositor3.address);
         const hWethBalance3 = await hodl.balanceOf(depositor3.address);
         expect(hWethBalance2).to.eq(hWethBalance3);
 
         // deposit 1 WETH from depositor4
         await token.connect(depositor4).approve(hodl.address, ethers.constants.MaxUint256);
-        await hodl.connect(depositor4).deposit(depositAmount);
+        await hodl.connect(depositor4).deposit(depositAmount, depositor4.address);
         const hWethBalance4 = await hodl.balanceOf(depositor4.address);
         expect(hWethBalance2).to.eq(hWethBalance4);
       });
@@ -399,7 +399,7 @@ describe("HodlERC20 Tests", function () {
 
     it("should revert when trying to deposit", async function () {
       const depositAmount = utils.parseUnits("1");
-      await expect(hodl.connect(depositor2).deposit(depositAmount)).to.be.revertedWith("LOCKED");
+      await expect(hodl.connect(depositor2).deposit(depositAmount, depositor2.address)).to.be.revertedWith("LOCKED");
     });
   });
 
@@ -411,7 +411,7 @@ describe("HodlERC20 Tests", function () {
     const depositAmount = utils.parseUnits("1");
     describe("#deposit", () => {
       it("Should not be able to deposit", async function () {
-        await expect(hodl.connect(depositor1).deposit(depositAmount)).to.be.revertedWith("LOCKED");
+        await expect(hodl.connect(depositor1).deposit(depositAmount, depositor1.address)).to.be.revertedWith("LOCKED");
       });
     });
     describe("#quit", () => {
