@@ -64,7 +64,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /**********************
    *       Events       *
    **********************/
-  event Deposit(address depositor, uint256 amount, uint256 shares);
+  event Deposit(address depositor, address recipient, uint256 amount, uint256 shares);
 
   event Exit(address quitter, uint256 amountOut, uint256 reward, uint256 fee);
 
@@ -146,19 +146,19 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    * the share you get is proportional to (time - expiry) / (start - expiry)
    * @param _amount amount of token to transfer into the Hodl contract
    */
-  function deposit(uint256 _amount) external {
+  function deposit(uint256 _amount, address _recipient) external {
     require(block.timestamp + lockWindow < expiry, "LOCKED");
 
     // mint hold token to the user
-    _mint(msg.sender, _amount);
+    _mint(_recipient, _amount);
 
     // calculate shares and mint to msg.sender
     uint256 sharesToMint = _calculateShares(_amount);
 
     totalShares = totalShares.add(sharesToMint);
-    _shares[msg.sender] = _shares[msg.sender].add(sharesToMint);
+    _shares[_recipient] = _shares[_recipient].add(sharesToMint);
 
-    emit Deposit(msg.sender, _amount, sharesToMint);
+    emit Deposit(msg.sender, _recipient, _amount, sharesToMint);
 
     token.safeTransferFrom(msg.sender, address(this), _amount);
   }
