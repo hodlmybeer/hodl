@@ -14,10 +14,7 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
   let accounts: SignerWithAddress[] = [];
 
   let feeRecipient: SignerWithAddress;
-  let depositor1: SignerWithAddress;
-  let depositor2: SignerWithAddress;
-  let depositor3: SignerWithAddress;
-  // let depositor4: SignerWithAddress;
+  let depositor: SignerWithAddress;
 
   const penalty = 50; // 5%
   const lockingWindow = 86400 * 1; // 1 day locking
@@ -32,11 +29,9 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
     expiry = BigNumber.from(parseInt(currentBlock.timestamp.toString()) + totalDuration);
 
     accounts = await ethers.getSigners();
-    const [_depositor1, _depositor2, _depositor3, _feeRecipient] = accounts;
+    const [_depositor, _feeRecipient] = accounts;
 
-    depositor1 = _depositor1;
-    depositor2 = _depositor2;
-    depositor3 = _depositor3;
+    depositor = _depositor;
     feeRecipient = _feeRecipient;
   });
 
@@ -74,7 +69,7 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
     describe("#donations", () => {
       it("Should fail if bonus token was not set up", async function () {
         const amountToDonate = utils.parseUnits("0.5");
-        await expect(hodl.connect(depositor2).donate(amountToDonate, bonusToken.address)).to.be.revertedWith(
+        await expect(hodl.connect(depositor).donate(amountToDonate, bonusToken.address)).to.be.revertedWith(
           "TOKEN_NOT_ALLOWED"
         );
       });
