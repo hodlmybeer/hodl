@@ -20,6 +20,7 @@ describe("HodlERC20 Tests", function () {
   let depositor2: SignerWithAddress;
   let depositor3: SignerWithAddress;
   let depositor4: SignerWithAddress;
+  let random: SignerWithAddress;
   let donor: SignerWithAddress;
 
   const penalty = 50; // 5%
@@ -35,12 +36,13 @@ describe("HodlERC20 Tests", function () {
     expiry = BigNumber.from(parseInt(currentBlock.timestamp.toString()) + totalDuration);
 
     accounts = await ethers.getSigners();
-    const [_depositor1, _depositor2, _depositor3, _depositor4, _feeRecipient, _donor] = accounts;
+    const [_depositor1, _depositor2, _depositor3, _depositor4, _feeRecipient, _random, _donor] = accounts;
 
     depositor1 = _depositor1;
     depositor2 = _depositor2;
     depositor3 = _depositor3;
     depositor4 = _depositor4;
+    random = _random;
     feeRecipient = _feeRecipient;
     donor = _donor;
   });
@@ -259,6 +261,11 @@ describe("HodlERC20 Tests", function () {
         await hodl.connect(depositor4).deposit(depositAmount, depositor4.address);
         const hWethBalance4 = await hodl.balanceOf(depositor4.address);
         expect(hWethBalance2).to.eq(hWethBalance4);
+
+        // mint hToken for random address (from depositor4)
+        await hodl.connect(depositor4).deposit(depositAmount, random.address);
+        const randomBalance = await hodl.balanceOf(depositor4.address);
+        expect(randomBalance).to.eq(hWethBalance4);
       });
     });
     describe("#quit", () => {
@@ -425,6 +432,15 @@ describe("HodlERC20 Tests", function () {
         await hodl.connect(depositor1).withdraw(balance1Before);
         const balance1After = await hodl.balanceOf(depositor1.address);
         expect(balance1After.isZero()).to.be.true;
+      });
+      it("Should be able to withdraw with minted hTokens", async function () {
+        const hTokenAmount = await hodl.balanceOf(random.address);
+        const wethBalanceBefore = await token.balanceOf(random.address);
+        await hodl.connect(random).withdraw(hTokenAmount);
+        const wethBalanceAfter = await token.balanceOf(random.address);
+        const hTokenBalanceAfter = await hodl.balanceOf(random.address);
+        expect(wethBalanceAfter.sub(wethBalanceBefore).gt(0)).to.be.true;
+        expect(hTokenBalanceAfter.isZero()).to.be.true;
       });
     });
     describe("#redeem", () => {
