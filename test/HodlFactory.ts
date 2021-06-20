@@ -37,7 +37,7 @@ describe("Hodl Factory Tests", function () {
 
   this.beforeAll("Deploy factory", async () => {
     const Factory = await ethers.getContractFactory("HodlFactory");
-    factory = await Factory.deploy(implementation.address);
+    factory = (await Factory.deploy(implementation.address)) as HodlFactory;
   });
 
   it("should revert if deploy with invalid impl address", async () => {

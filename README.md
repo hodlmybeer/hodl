@@ -56,17 +56,18 @@ When a user quits, they are also forced to redeem some of the pool shares (propo
 
 ## Run this repo locally
 
-### install
+### Install
 
 ```bash
 npm i 
 ```
 
-### test
+### Test
 
 ```bash
 # unit test
 npx hardhat test
+
 # coverage test
 npx hardhat coverage 
 ```
@@ -91,4 +92,12 @@ Or find more details [here](https://github.com/crytic/slither#how-to-install) in
 
 ```
 slither .
+```
+
+### Deployment
+
+Running this script will deploy both `HodlERC20` and `HodlFactory`, and try to get them verified on etherscan.
+
+```shell
+npx hardhat run --network {network} scripts/deploy.ts
 ```
