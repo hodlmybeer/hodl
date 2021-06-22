@@ -51,7 +51,7 @@ describe("HodlERC20 Tests", function () {
     accounts = await ethers.getSigners();
     const HodlERC20 = await ethers.getContractFactory("HodlERC20");
     const contract = await HodlERC20.deploy();
-    hodl = (contract as unknown) as HodlERC20;
+    hodl = contract as unknown as HodlERC20;
   });
 
   this.beforeAll("Deploy Mock tokens", async () => {
