@@ -335,7 +335,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     uint256 cachedBase = BASE; // save SLOAD
     uint256 totalPenalty = _amount.mul(penaltyPortion).div(cachedBase);
 
-    fee = totalPenalty.mul(feePortion).div(cachedBase);
+    fee = _amount.mul(penaltyPortion).mul(feePortion).div(cachedBase).div(cachedBase);
     reward = totalPenalty.sub(fee);
     payout = _amount.sub(totalPenalty);
   }
