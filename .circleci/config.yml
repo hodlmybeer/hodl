@@ -10,7 +10,7 @@ workflows:
       - compile-and-test:
           requires:
             - checkout-and-install
-          context: COVERALLS_REPO_TOKEN
+          context: BUILD_KEYS
 
 jobs:
   checkout-and-install:
