@@ -62,6 +62,4 @@ jobs:
           path: /coverage
       - store_artifacts:
           path: /coverage.json
-      - store_artifacts:
-          path: test-results.xml
   
