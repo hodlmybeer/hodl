@@ -10,6 +10,7 @@ workflows:
       - compile-and-test:
           requires:
             - checkout-and-install
+          context: BUILD_KEYS
 
 jobs:
   checkout-and-install:
@@ -53,6 +54,12 @@ jobs:
           name: Check Contracts Size
           command: npx hardhat size-contracts
       - run:
-          name: Test and Coverage
+          name: Coverage Report
           command: npx hardhat coverage
-      
+      - coveralls/upload:
+          path_to_lcov: ./coverage/lcov.info
+      - store_artifacts:
+          path: /coverage
+      - store_artifacts:
+          path: /coverage.json
+  
