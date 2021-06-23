@@ -1,5 +1,7 @@
 # Hodl
 
+[![Coverage Status](https://coveralls.io/repos/github/hodlmybeer/hodl/badge.svg?branch=master)](https://coveralls.io/github/hodlmybeer/hodl?branch=master)
+
 <p align="center">
 <img src="./imgs/beers.png" width="100" height="100">
 </p>
