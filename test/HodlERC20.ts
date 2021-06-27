@@ -2,7 +2,6 @@ import { ethers, waffle } from "hardhat";
 import { expect } from "chai";
 import { HodlERC20, MockERC20 } from "../typechain";
 import { BigNumber, utils } from "ethers";
-// import { calculateShares } from './utils';
 import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 describe("HodlERC20 Tests", function () {
@@ -12,7 +11,6 @@ describe("HodlERC20 Tests", function () {
   let hodl: HodlERC20;
   let token: MockERC20;
   let bonusToken: MockERC20;
-
   let randomToken: MockERC20;
 
   let totalTime: BigNumber;
@@ -70,7 +68,6 @@ describe("HodlERC20 Tests", function () {
     await bonusToken.init("BONUS", "BONUS", 18);
     await randomToken.init("COMP", "COMP", 18);
 
-    // mint 100 WETH to account 0, 1 , 2, 3
     // every depositor got 10 weth
     const mintAmount = utils.parseUnits("10", "ether");
     await token.mint(depositor1.address, mintAmount);
