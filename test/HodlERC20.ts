@@ -12,6 +12,9 @@ describe("HodlERC20 Tests", function () {
   let hodl: HodlERC20;
   let token: MockERC20;
   let bonusToken: MockERC20;
+
+  let randomToken: MockERC20;
+
   let totalTime: BigNumber;
   let accounts: SignerWithAddress[] = [];
 
@@ -58,10 +61,14 @@ describe("HodlERC20 Tests", function () {
     const ERC20 = await ethers.getContractFactory("MockERC20");
     const erc20 = await ERC20.deploy();
     const bonusErc20 = await ERC20.deploy();
+    const randomErc20 = await ERC20.deploy();
     token = erc20 as MockERC20;
     bonusToken = bonusErc20 as MockERC20;
+    randomToken = randomErc20 as MockERC20;
+
     await token.init("WETH", "WETH", 18);
     await bonusToken.init("BONUS", "BONUS", 18);
+    await randomToken.init("COMP", "COMP", 18);
 
     // mint 100 WETH to account 0, 1 , 2, 3
     // every depositor got 10 weth
@@ -393,6 +400,33 @@ describe("HodlERC20 Tests", function () {
         const bonusBalanceAfter = await bonusToken.balanceOf(depositor4.address);
         expect(bonusBalanceAfter.sub(bonusBalanceBefore).eq(amountToGet)).to.be.true;
         expect(bonusBalanceAfter.gt(0.0)).to.be.true;
+      });
+    });
+    describe("#donations", () => {
+      it("should revert if trying to sweep bonus token", async () => {
+        await expect(hodl.sweep(bonusToken.address, 0)).to.be.revertedWith("INVALID_TOKEN_TO_SWEEP");
+      });
+      it("should revert if trying to sweep main token", async () => {
+        await expect(hodl.sweep(token.address, 0)).to.be.revertedWith("INVALID_TOKEN_TO_SWEEP");
+      });
+      it("should be able to sweep token out of the contract", async function () {
+        const tokenAmount = 2000000;
+        await randomToken.mint(hodl.address, tokenAmount);
+
+        const feeRecipientBalanceBefore = await randomToken.balanceOf(feeRecipient.address);
+        const hodlContractBalanceBefore = await randomToken.balanceOf(hodl.address);
+
+        await hodl.sweep(randomToken.address, tokenAmount);
+
+        const feeRecipientBalanceAfter = await randomToken.balanceOf(feeRecipient.address);
+        const hodlContractBalanceAfter = await randomToken.balanceOf(hodl.address);
+
+        expect(
+          hodlContractBalanceBefore
+            .sub(hodlContractBalanceAfter)
+            .eq(feeRecipientBalanceAfter.sub(feeRecipientBalanceBefore))
+        ).to.be.true;
+        expect(hodlContractBalanceBefore.sub(hodlContractBalanceAfter).eq(tokenAmount)).to.be.true;
       });
     });
   });
