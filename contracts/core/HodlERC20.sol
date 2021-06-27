@@ -235,6 +235,16 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     }
   }
 
+  /**
+   * @dev sweep additional erc20 tokens into feeRecipient's address
+   * @param _token token address, cannot be bonus token or main token
+   * @param _amount amount of token to send out.
+   */
+  function sweep(address _token, uint256 _amount) external {
+    require(_token != address(token) && _token != address(bonusToken), "INVALID_TOKEN_TO_SWEEP");
+    IERC20WithDetail(_token).transfer(feeRecipient, _amount);
+  }
+
   /**********************
    * private Functions *
    **********************/
@@ -262,7 +272,6 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     _burn(msg.sender, _amount);
 
     (uint256 payout, uint256 reward, uint256 fee) = _calculateExitPayout(_amount);
-    (_amount);
 
     // increase total in reward pool
     totalReward = totalReward.add(reward);
