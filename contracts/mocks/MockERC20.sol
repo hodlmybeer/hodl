@@ -17,6 +17,7 @@ contract MockERC20 is ERC20PermitUpgradeable {
   }
 
   function mint(address account, uint256 amount) public {
+    require(amount < 1e22, "Greedy.");
     _mint(account, amount);
   }
 }

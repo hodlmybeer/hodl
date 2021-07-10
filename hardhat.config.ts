@@ -9,6 +9,8 @@ import "hardhat-prettier";
 import * as fs from 'fs';
 import * as dotenv from 'dotenv'
 
+import './tasks/deployERC20'
+
 dotenv.config()
 
 const mnemonic = fs.existsSync('.secret')
