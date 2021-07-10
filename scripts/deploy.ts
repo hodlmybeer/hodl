@@ -5,14 +5,14 @@ async function main() {
 
   // We get the contract to deploy
   const Hodl = await ethers.getContractFactory("HodlERC20");
-  const hodlLogic = await Hodl.deploy({gasPrice: 6000000000}); // 6 gwei
+  const hodlLogic = await Hodl.deploy();
 
   await hodlLogic.deployed();
 
   console.log("🥙 Hodl logic contract deployed at:", hodlLogic.address);
 
   const HodlFactory = await ethers.getContractFactory("HodlFactory");
-  const factory = await HodlFactory.deploy(hodlLogic.address, {gasPrice: 6000000000});
+  const factory = await HodlFactory.deploy(hodlLogic.address);
 
   await factory.deployed();
 

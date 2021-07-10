@@ -29,16 +29,32 @@ export default {
     hardhat: {},
     ropsten: {
       url: `https://ropsten.infura.io/v3/${infuraKey}`,
-      accounts: {
-        mnemonic: mnemonic,
-      },
+      accounts: { mnemonic: mnemonic },
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${infuraKey}`,
-      accounts: {
-        mnemonic: mnemonic,
-      },
+      accounts: { mnemonic: mnemonic },
     },
+    bscTestnet: {
+      url: "https://data-seed-prebsc-1-s1.binance.org:8545",
+      chainId: 97,
+      accounts: { mnemonic: mnemonic },
+    },
+    bsc: {
+      url: "https://bsc-dataseed.binance.org/",
+      chainId: 56,
+      accounts: { mnemonic: mnemonic },
+    },
+    matic: {
+      chainId: 137,
+      url: 'https://rpc-mainnet.matic.network',
+      accounts: { mnemonic: mnemonic },
+    },
+    mumbai: {
+      chainId: 80001,
+      url: "https://rpc-mumbai.maticvigil.com",
+      accounts: { mnemonic: mnemonic }
+    }
   },
   solidity: '0.7.3',
   settings: {
