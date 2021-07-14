@@ -14,6 +14,7 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
   let accounts: SignerWithAddress[] = [];
 
   let feeRecipient: SignerWithAddress;
+  let donor: SignerWithAddress;
   let depositor: SignerWithAddress;
 
   const penalty = 50; // 5%
@@ -29,9 +30,10 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
     expiry = BigNumber.from(parseInt(currentBlock.timestamp.toString()) + totalDuration);
 
     accounts = await ethers.getSigners();
-    const [_depositor, _feeRecipient] = accounts;
+    const [depositor1,depositor2, _feeRecipient] = accounts;
 
-    depositor = _depositor;
+    donor = depositor1;
+    depositor = depositor2;
     feeRecipient = _feeRecipient;
   });
 
@@ -51,6 +53,10 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
     await token.init("WETH", "WETH", 18);
     await bonusToken.init("BONUS", "BONUS", 18);
 
+    // mint 10 WETH to depositor
+    const mintAmount = utils.parseUnits("10", "ether");
+    await token.mint(depositor.address, mintAmount);
+   
     await hodl.init(
       token.address,
       penalty,
@@ -69,10 +75,27 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
     describe("#donations", () => {
       it("Should fail if bonus token was not set up", async function () {
         const amountToDonate = utils.parseUnits("0.5");
-        await expect(hodl.connect(depositor).donate(amountToDonate, bonusToken.address)).to.be.revertedWith(
+        await expect(hodl.connect(donor).donate(amountToDonate, bonusToken.address)).to.be.revertedWith(
           "TOKEN_NOT_ALLOWED"
         );
       });
     });
   });
+  describe("redemption", () => {
+    it("Should not be able to redeem shares when there is no reward", async function () {
+      const depositAmount = utils.parseUnits("1");
+      await token.connect(depositor).approve(hodl.address, ethers.constants.MaxUint256);
+      await hodl.connect(depositor).deposit(depositAmount, depositor.address);
+
+      const hWethBalance = await hodl.balanceOf(depositor.address);
+      expect(hWethBalance).to.eq(depositAmount);
+
+      const sharesBefore = await hodl.shares(depositor.address);
+      expect(sharesBefore.lt(depositAmount)).to.be.true;
+
+      await hodl.connect(depositor).redeem(sharesBefore);
+      const sharesAfter = await hodl.shares(depositor.address);
+      expect(sharesBefore).to.eq(sharesAfter);
+    });
+  })
 });

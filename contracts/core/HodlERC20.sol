@@ -174,7 +174,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     // Need to perform before _quit, so a user won't get reward from his own exit.
     if (_shares[msg.sender] > 0) {
       uint256 sharesToRedeem = _calculateSharesForceRedeem(msg.sender, _amount);
-      _redeem(sharesToRedeem);
+      _redeem(sharesToRedeem, true);
     }
 
     _penalizeAndExit(_amount);
@@ -194,7 +194,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    * @param _share shares to burn
    */
   function redeem(uint256 _share) external {
-    _redeem(_share);
+    _redeem(_share, false);
   }
 
   /**
@@ -205,7 +205,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     _withdraw(tokenAmount);
 
     uint256 shareAmount = _shares[msg.sender];
-    _redeem(shareAmount);
+    _redeem(shareAmount, true);
   }
 
   /**
@@ -299,20 +299,22 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /**
    * @dev reduce user share and send reward based on current reward pool.
    * @param _share amount of share
+   * @param _forceRedeem if true, the shares will be burnt regardless of the reward amount (necessary when quitting or withdrawing). If false, the shares will only be redeemed when there is some reward.
    */
-  function _redeem(uint256 _share) private {
+  function _redeem(uint256 _share, bool _forceRedeem) private {
     uint256 baseTokenPayout = _rewardFromShares(_share, totalReward);
     uint256 bonusTokenPayout = _rewardFromShares(_share, totalBonusReward);
+
     // reduce total price recorded
     totalReward = totalReward.sub(baseTokenPayout);
     totalBonusReward = totalBonusReward.sub(bonusTokenPayout);
-    totalShares = totalShares.sub(_share);
+    if (_forceRedeem || baseTokenPayout > 0 || bonusTokenPayout > 0) {
+      totalShares = totalShares.sub(_share);
+      // subtract shares from user shares. this will revert if user doesn't have sufficient shares
+      _shares[msg.sender] = _shares[msg.sender].sub(_share);
 
-    // subtract shares from user shares. this will revert if user doesn't have sufficient shares
-    _shares[msg.sender] = _shares[msg.sender].sub(_share);
-
-    emit Redeem(msg.sender, _share, baseTokenPayout, bonusTokenPayout);
-
+      emit Redeem(msg.sender, _share, baseTokenPayout, bonusTokenPayout);
+    }
     if (baseTokenPayout > 0) token.safeTransfer(msg.sender, baseTokenPayout);
     if (bonusTokenPayout > 0) bonusToken.safeTransfer(msg.sender, bonusTokenPayout);
   }
