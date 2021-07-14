@@ -90,12 +90,10 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
       const hWethBalance = await hodl.balanceOf(depositor.address);
       expect(hWethBalance).to.eq(depositAmount);
 
-      const sharesBefore = await hodl.shares(depositor.address);
-      expect(sharesBefore.lt(depositAmount)).to.be.true;
+      const shares = await hodl.shares(depositor.address);
+      expect(shares.lt(depositAmount)).to.be.true;
 
-      await hodl.connect(depositor).redeem(sharesBefore);
-      const sharesAfter = await hodl.shares(depositor.address);
-      expect(sharesBefore).to.eq(sharesAfter);
+      await expect(hodl.connect(donor).redeem(shares)).to.be.revertedWith("NOTHING_TO_REDEEM");
     });
   });
 });
