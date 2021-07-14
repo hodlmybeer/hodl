@@ -30,7 +30,7 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
     expiry = BigNumber.from(parseInt(currentBlock.timestamp.toString()) + totalDuration);
 
     accounts = await ethers.getSigners();
-    const [depositor1,depositor2, _feeRecipient] = accounts;
+    const [depositor1, depositor2, _feeRecipient] = accounts;
 
     donor = depositor1;
     depositor = depositor2;
@@ -56,7 +56,7 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
     // mint 10 WETH to depositor
     const mintAmount = utils.parseUnits("10", "ether");
     await token.mint(depositor.address, mintAmount);
-   
+
     await hodl.init(
       token.address,
       penalty,
@@ -97,5 +97,5 @@ describe("HodlERC20 Tests Without Bonus Token", function () {
       const sharesAfter = await hodl.shares(depositor.address);
       expect(sharesBefore).to.eq(sharesAfter);
     });
-  })
+  });
 });
