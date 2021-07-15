@@ -194,6 +194,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    * @param _share shares to burn
    */
   function redeem(uint256 _share) external {
+    require(totalReward > 0 || totalBonusReward > 0, "NOTHING_TO_REDEEM");
     _redeem(_share);
   }
 
@@ -303,16 +304,15 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   function _redeem(uint256 _share) private {
     uint256 baseTokenPayout = _rewardFromShares(_share, totalReward);
     uint256 bonusTokenPayout = _rewardFromShares(_share, totalBonusReward);
+
     // reduce total price recorded
     totalReward = totalReward.sub(baseTokenPayout);
     totalBonusReward = totalBonusReward.sub(bonusTokenPayout);
     totalShares = totalShares.sub(_share);
-
     // subtract shares from user shares. this will revert if user doesn't have sufficient shares
     _shares[msg.sender] = _shares[msg.sender].sub(_share);
 
     emit Redeem(msg.sender, _share, baseTokenPayout, bonusTokenPayout);
-
     if (baseTokenPayout > 0) token.safeTransfer(msg.sender, baseTokenPayout);
     if (bonusTokenPayout > 0) bonusToken.safeTransfer(msg.sender, bonusTokenPayout);
   }

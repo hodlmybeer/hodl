@@ -9,3 +9,5 @@ typechain
 coverage
 coverage.json
 .secret
+
+.DS_Store
