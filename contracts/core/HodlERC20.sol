@@ -143,7 +143,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   /**
    * @dev deposit token into the contract.
    * the deposit amount will be stored under the account.
-   * the share you get is proportional to (time - expiry) / (start - expiry)
+   * the share you get is proportional to (expiry - time) / (expiry - start)
    * @param _amount amount of token to transfer into the Hodl contract
    */
   function deposit(uint256 _amount, address _recipient) external {
@@ -164,8 +164,8 @@ contract HodlERC20 is ERC20PermitUpgradeable {
   }
 
   /**
-   * @dev exist from the pool before expiry. Reverts if the pool is expired.
-   * @param _amount amount of token to exist
+   * @dev exit from the pool before expiry. Reverts if the pool is expired.
+   * @param _amount amount of token to exit
    */
   function quit(uint256 _amount) external {
     require(block.timestamp < expiry, "EXPIRED");
@@ -243,7 +243,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    */
   function sweep(address _token, uint256 _amount) external {
     require(_token != address(token) && _token != address(bonusToken), "INVALID_TOKEN_TO_SWEEP");
-    IERC20WithDetail(_token).transfer(feeRecipient, _amount);
+    IERC20WithDetail(_token).safeTransfer(feeRecipient, _amount);
   }
 
   /**********************
@@ -359,7 +359,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
    *                      (total duration)^ n
    */
   function _calculateShares(uint256 _amount) internal view returns (uint256) {
-    uint256 timeLeft = expiry - block.timestamp;
+    uint256 timeLeft = expiry.sub(block.timestamp);
     return _amount.mul(timeLeft**n).div(totalTime**n);
   }
 
