@@ -101,7 +101,7 @@ contract HodlERC20 is ERC20PermitUpgradeable {
     require(address(_token) != address(_bonusToken), "INVALID_BONUS_TOKEN");
     require(_feeRecipient != address(0), "INVALID_RECIPIENT");
 
-    totalTime = _expiry - block.timestamp;
+    totalTime = _expiry.sub(block.timestamp);
 
     token = IERC20WithDetail(_token);
     bonusToken = IERC20WithDetail(_bonusToken);
