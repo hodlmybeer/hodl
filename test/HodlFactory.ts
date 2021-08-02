@@ -9,6 +9,7 @@ describe("Hodl Factory Tests", function () {
   const expiry = BigNumber.from(parseInt((Date.now() / 1000).toString()) + totalDuration);
   let factory: HodlFactory;
   let token: MockERC20;
+  let bonusToken: MockERC20;
   let accounts: SignerWithAddress[] = [];
   let creator: SignerWithAddress;
   let implementation: HodlERC20;
@@ -33,6 +34,10 @@ describe("Hodl Factory Tests", function () {
     const erc20 = await ERC20.deploy();
     token = erc20 as MockERC20;
     await token.init("WETH", "WETH", 18);
+
+    const token2 = await ERC20.deploy();
+    bonusToken = token2 as MockERC20;
+    await bonusToken.init("COOL", "COOL", 18);
   });
 
   this.beforeAll("Deploy factory", async () => {
@@ -45,7 +50,30 @@ describe("Hodl Factory Tests", function () {
     await expect(Factory.deploy(ethers.constants.AddressZero)).to.be.revertedWith("INVALID_IMPL");
   });
 
+  it("should revert if the asset is not whitelisted", async () => {
+    await expect(
+      factory.createHodlERC20(
+        token.address,
+        penalty,
+        lockingWindow,
+        expiry,
+        fee,
+        n,
+        creator.address,
+        ethers.constants.AddressZero
+      )
+    ).to.be.revertedWith("NOT_WHITELISTED");
+  });
+
+  it("should revert when non-owner wants to whitelist an asset", async () => {
+    const random = accounts[1];
+    await expect(factory.connect(random).whitelistAsset(token.address, true)).to.be.revertedWith(
+      "Ownable: caller is not the owner"
+    );
+  });
+
   it("deploy a new clone", async () => {
+    await factory.whitelistAsset(token.address, true);
     const targetAddress = await factory.getTargetHTokenAddress(
       token.address,
       penalty,
@@ -92,6 +120,7 @@ describe("Hodl Factory Tests", function () {
     );
     expect(targetAddress === deployedAddressAfter).to.be.true;
   });
+
   it("should revert when creating the same token", async () => {
     await expect(
       factory
@@ -107,5 +136,20 @@ describe("Hodl Factory Tests", function () {
           ethers.constants.AddressZero
         )
     ).to.be.revertedWith("CREATED");
+  });
+
+  it("should revert if the bonus asset is not whitelisted", async () => {
+    await expect(
+      factory.createHodlERC20(
+        token.address,
+        penalty,
+        lockingWindow,
+        expiry,
+        fee,
+        n,
+        creator.address,
+        bonusToken.address
+      )
+    ).to.be.revertedWith("NOT_WHITELISTED");
   });
 });
