@@ -2,6 +2,7 @@
 pragma solidity ^0.7.0;
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Spawn} from "../packages/Spawn.sol";
 import {IERC20WithDetail} from "../interfaces/IERC20WithDetail.sol";
 import {IHodlERC20} from "../interfaces/IHodlERC20.sol";
@@ -68,12 +69,15 @@ contract HodlSpawner {
  * @dev Calculate contract address before each creation with CREATE2
  * and deploy eip-1167 minimal proxies for the logic contract
  */
-contract HodlFactory is HodlSpawner {
+contract HodlFactory is HodlSpawner, Ownable {
   /// @dev mapping from parameters hash to its deployed address
   mapping(bytes32 => address) private _idToAddress;
 
   /// @dev if the address is a valid hToken deployed by this factory
   mapping(address => bool) private _isValidHToken;
+
+  /// @dev mapping of whitelisted asset to prevent people from creating hodling competition with malicious ERC20.
+  mapping(address => bool) public isWhitelistAsset;
 
   address implementation;
 
@@ -81,6 +85,8 @@ contract HodlFactory is HodlSpawner {
     require(_implementation != address(0), "INVALID_IMPL");
     implementation = _implementation;
   }
+
+  event AssetWhitelisted(address asset, bool whitelisted);
 
   /// @notice emitted when the factory creates a new hToken "barrel"
   event HodlCreated(
@@ -95,6 +101,15 @@ contract HodlFactory is HodlSpawner {
     address creator,
     address bonusToken
   );
+
+  /**
+   * @dev owner only function to whitelist or un-whitelist an asset.
+   * the owner should be a governance module
+   */
+  function whitelistAsset(address _asset, bool _isWhitelist) external onlyOwner {
+    isWhitelistAsset[_asset] = _isWhitelist;
+    emit AssetWhitelisted(_asset, _isWhitelist);
+  }
 
   /**
    * @notice create new HodlERC20 proxy
@@ -120,6 +135,8 @@ contract HodlFactory is HodlSpawner {
   ) external returns (address newHodl) {
     bytes32 id = _getHodlId(_token, _penalty, _lockWindow, _expiry, _fee, _n, _feeRecipient, _bonusToken);
     require(_idToAddress[id] == address(0), "CREATED");
+    require(isWhitelistAsset[_token], "NOT_WHITELISTED");
+    require(_bonusToken == address(0) || isWhitelistAsset[_bonusToken], "NOT_WHITELISTED");
     string memory name;
     string memory symbol;
 
