@@ -30,6 +30,10 @@ const etherscanKey = process.env.ETHERSCAN_KEY
 export default {
   networks: {
     hardhat: {},
+    mainnet: {
+      url: `https://mainnet.infura.io/v3/${infuraKey}`,
+      accounts: { mnemonic: mnemonic },
+    },
     ropsten: {
       url: `https://ropsten.infura.io/v3/${infuraKey}`,
       accounts: { mnemonic: mnemonic },
@@ -59,12 +63,14 @@ export default {
       accounts: { mnemonic: mnemonic }
     }
   },
-  solidity: '0.7.3',
-  settings: {
-    optimizer: {
-      enabled: true,
-      runs: 5,
-    },
+  solidity: {
+    version: "0.7.3",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 200,
+      },
+    }
   },
   typechain: {
     outDir: 'typechain',
