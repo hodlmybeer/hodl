@@ -10,6 +10,7 @@ import * as fs from 'fs';
 import * as dotenv from 'dotenv'
 
 import './tasks/deployERC20'
+import './tasks/whitelistToken'
 
 dotenv.config()
 
@@ -49,7 +50,7 @@ export default {
     },
     matic: {
       chainId: 137,
-      url: 'https://rpc-mainnet.matic.network',
+      url: 'https://rpc-mainnet.maticvigil.com/',
       accounts: { mnemonic: mnemonic },
     },
     mumbai: {
